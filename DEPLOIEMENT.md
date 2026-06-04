@@ -62,6 +62,23 @@ php artisan tinker --execute="App\Models\User::create(['name'=>'Mathieu','email'
 > **chiffré** en base avec `APP_KEY`. Un utilisateur connecté via Google n'a pas
 > besoin du 2FA (Google est le fournisseur d'identité).
 
+## 5 ter. E-mail (réinitialisation de mot de passe)
+Le CRM envoie un **lien sécurisé** (token expirant 60 min, à usage unique) par
+e-mail. En local, `MAIL_MAILER=log` écrit l'e-mail dans `storage/logs/laravel.log`.
+**En production**, configure un vrai SMTP dans `.env` :
+```dotenv
+MAIL_MAILER=smtp
+MAIL_HOST=mail.techcaresolutions.fr   # SMTP de ton hébergeur (ex. o2switch)
+MAIL_PORT=465
+MAIL_USERNAME=no-reply@techcaresolutions.fr
+MAIL_PASSWORD=********
+MAIL_SCHEME=ssl                       # ssl (465) ou tls (587)
+MAIL_FROM_ADDRESS="no-reply@techcaresolutions.fr"
+MAIL_FROM_NAME="CRM TechCare"
+```
+Parcours : **« Mot de passe oublié ? »** → email → lien de réinitialisation →
+nouveau mot de passe. L'e-mail est en français.
+
 ## 6. API + SDK (réception des prospects depuis le moteur)
 Le moteur de prospection (autre serveur) pousse ses données via l'API du CRM.
 
