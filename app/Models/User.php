@@ -17,12 +17,12 @@ class User extends Authenticatable
     /**
      * @var list<string>
      */
-    protected $fillable = ['name', 'email', 'password'];
+    protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar'];
 
     /**
      * @var list<string>
      */
-    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes'];
+    protected $hidden = ['password', 'remember_token', 'two_factor_secret', 'two_factor_recovery_codes', 'google_id'];
 
     /**
      * Get the attributes that should be cast.
@@ -37,6 +37,8 @@ class User extends Authenticatable
             'two_factor_secret' => 'encrypted',
             'two_factor_recovery_codes' => 'encrypted:array',
             'two_factor_confirmed_at' => 'datetime',
+            // Chiffré avec la clé d'application (APP_KEY), AES-256.
+            'google_id' => 'encrypted',
         ];
     }
 

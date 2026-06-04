@@ -44,6 +44,24 @@ php artisan tinker --execute="App\Models\User::create(['name'=>'Mathieu','email'
 - À la prochaine connexion, un **challenge** est demandé après le mot de passe.
 - Codes de récupération utilisables si le téléphone est perdu (à usage unique).
 
+## 5 bis. Connexion « Se connecter avec Google » (optionnel)
+1. **Google Cloud Console** → *APIs & Services* → *Credentials* → *Create
+   OAuth client ID* → type **Web application**.
+2. **Authorized redirect URI** : `https://crm.exemple.fr/auth/google/callback`
+   (doit correspondre **exactement** à `APP_URL` + `/auth/google/callback`).
+3. Récupère **Client ID** et **Client secret**, puis dans `.env` :
+   ```dotenv
+   GOOGLE_CLIENT_ID=xxxx.apps.googleusercontent.com
+   GOOGLE_CLIENT_SECRET=xxxx
+   GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
+   ```
+4. Le bouton **« Se connecter avec Google »** apparaît alors sur la page de login.
+
+> 🔒 Sécurité : la connexion Google ne marche **que pour un compte CRM existant**
+> (liaison par email — pas de création de compte sauvage). Le `google_id` est
+> **chiffré** en base avec `APP_KEY`. Un utilisateur connecté via Google n'a pas
+> besoin du 2FA (Google est le fournisseur d'identité).
+
 ## 6. API + SDK (réception des prospects depuis le moteur)
 Le moteur de prospection (autre serveur) pousse ses données via l'API du CRM.
 
