@@ -1,7 +1,7 @@
 # Déploiement du CRM sur un autre serveur
 
 ## 1. Pré-requis serveur
-- PHP 8.3+, Composer, Node 20+, un serveur web (Nginx/Apache) + **HTTPS**.
+- PHP 8.2+, Composer, Node 20+, un serveur web (Nginx/Apache) + **HTTPS**.
 - Base de données **MySQL/MariaDB** (recommandé en prod) ou SQLite.
 
 ## 2. Installation
