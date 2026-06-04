@@ -11,6 +11,62 @@ class ProspectApiController extends Controller
 {
     public function __construct(private ProspectUpsert $upsert) {}
 
+    /** Liste paginée (app mobile) avec filtres q/statut/source/secteur. */
+    public function index(Request $request)
+    {
+        return Prospect::query()
+            ->when($request->input('q'), fn ($query, $v) => $query->where(fn ($w) =>
+                $w->where('entreprise', 'like', "%{$v}%")
+                  ->orWhere('localite', 'like', "%{$v}%")
+                  ->orWhere('secteur', 'like', "%{$v}%")))
+            ->when($request->input('statut'), fn ($query, $v) => $query->where('statut', $v))
+            ->when($request->input('source_fichier'), fn ($query, $v) => $query->where('source_fichier', $v))
+            ->orderBy('entreprise')
+            ->paginate(30);
+    }
+
+    /** Fiche d'un prospect avec son historique. */
+    public function show(Prospect $prospect)
+    {
+        return $prospect->load('interactions', 'tenders:id,prospect_id,objet,date_limite,statut');
+    }
+
+    /** Met à jour le suivi (statut, notes, relance) depuis le mobile. */
+    public function updateSuivi(Request $request, Prospect $prospect)
+    {
+        $data = $request->validate([
+            'statut'            => ['sometimes', 'in:'.implode(',', array_keys(Prospect::STATUTS))],
+            'notes'             => ['nullable', 'string'],
+            'prochaine_relance' => ['nullable', 'date'],
+        ]);
+        $prospect->update($data);
+
+        return $prospect;
+    }
+
+    /** Ajoute une interaction (appel, email, note…). */
+    public function addInteraction(Request $request, Prospect $prospect)
+    {
+        $data = $request->validate([
+            'type' => ['required', 'in:'.implode(',', array_keys(\App\Models\Interaction::TYPES))],
+            'note' => ['nullable', 'string'],
+        ]);
+        $data['date'] = now();
+        $prospect->interactions()->create($data);
+
+        return response()->json(['ok' => true], 201);
+    }
+
+    /** Statistiques pipeline (pour l'écran d'accueil mobile). */
+    public function stats()
+    {
+        return response()->json([
+            'total'    => Prospect::count(),
+            'pipeline' => Prospect::selectRaw('statut, count(*) as n')->groupBy('statut')->pluck('n', 'statut'),
+            'statuts'  => Prospect::STATUTS,
+        ]);
+    }
+
     /** Crée/met à jour un prospect unique. */
     public function store(Request $request)
     {
