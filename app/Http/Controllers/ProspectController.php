@@ -47,7 +47,8 @@ class ProspectController extends Controller
 
     public function show(Prospect $prospect)
     {
-        $prospect->load('interactions', 'tenders:id,prospect_id,acheteur,objet,date_limite,statut');
+        $prospect->load('interactions', 'tenders:id,prospect_id,acheteur,objet,date_limite,statut',
+            'projects:id,prospect_id,titre,statut');
 
         return Inertia::render('Prospects/Show', [
             'prospect'    => $prospect,

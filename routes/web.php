@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Controllers\AppelOffreController;
+use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InteractionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProspectController;
 use Illuminate\Support\Facades\Route;
 
@@ -25,6 +27,16 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/appels-offres/{tender}/checklist', [AppelOffreController::class, 'saveChecklist'])->name('ao.checklist');
     Route::get('/appels-offres/{tender}/dossier.doc', [AppelOffreController::class, 'downloadDoc'])->name('ao.dossier.doc');
     Route::get('/appels-offres/{tender}/annexe.xlsx', [AppelOffreController::class, 'downloadXlsx'])->name('ao.dossier.xlsx');
+
+    // --- Clients & projets ---
+    Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+
+    Route::get('/projets', [ProjectController::class, 'index'])->name('projects.index');
+    Route::get('/projets/{project}', [ProjectController::class, 'show'])->name('projects.show');
+    Route::put('/projets/{project}', [ProjectController::class, 'update'])->name('projects.update');
+    Route::post('/projets/{project}/taches', [ProjectController::class, 'storeTask'])->name('tasks.store');
+    Route::put('/taches/{task}', [ProjectController::class, 'updateTask'])->name('tasks.update');
+    Route::delete('/taches/{task}', [ProjectController::class, 'destroyTask'])->name('tasks.destroy');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

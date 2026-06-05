@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\Prospect;
+use App\Observers\ProspectObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Vite;
@@ -23,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // Prospect « Gagné » -> client + projet auto.
+        Prospect::observe(ProspectObserver::class);
 
         // E-mail de réinitialisation de mot de passe, en français.
         ResetPassword::toMailUsing(function ($notifiable, string $token) {

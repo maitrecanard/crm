@@ -42,6 +42,18 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Appels d’offres
                                 </NavLink>
+                                <NavLink
+                                    href={route('clients.index')}
+                                    active={route().current('clients.*')}
+                                >
+                                    Clients
+                                </NavLink>
+                                <NavLink
+                                    href={route('projects.index')}
+                                    active={route().current('projects.*')}
+                                >
+                                    Projets
+                                </NavLink>
                             </div>
                         </div>
 
@@ -157,6 +169,18 @@ export default function AuthenticatedLayout({ header, children }) {
                             active={route().current('ao.*')}
                         >
                             Appels d’offres
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('clients.index')}
+                            active={route().current('clients.*')}
+                        >
+                            Clients
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink
+                            href={route('projects.index')}
+                            active={route().current('projects.*')}
+                        >
+                            Projets
                         </ResponsiveNavLink>
                     </div>
 

@@ -10,12 +10,14 @@ class Prospect extends Model
     protected $fillable = [
         'cle', 'entreprise', 'localite', 'telephone', 'email', 'categorie',
         'secteur', 'signal_alerte', 'source_url', 'requete', 'source_fichier',
-        'statut', 'prochaine_relance', 'notes', 'scenarios',
+        'statut', 'prochaine_relance', 'notes', 'scenarios', 'est_client', 'client_depuis',
     ];
 
     protected $casts = [
         'prochaine_relance' => 'date',
         'scenarios' => 'array',
+        'est_client' => 'boolean',
+        'client_depuis' => 'date',
     ];
 
     /** Étapes du pipeline commercial. */
@@ -37,5 +39,10 @@ class Prospect extends Model
     public function tenders(): HasMany
     {
         return $this->hasMany(Tender::class)->orderBy('date_limite');
+    }
+
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class)->latest();
     }
 }

@@ -34,6 +34,25 @@ export default function Show({ prospect, statuts, typeOptions, vendeur }) {
         }>
             <Head title={prospect.entreprise} />
 
+            {prospect.est_client && (
+                <div className="mx-auto max-w-5xl px-4 pt-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+                        <span className="font-semibold">✓ Client</span>
+                        {prospect.client_depuis && <span className="text-emerald-700">depuis le {new Date(prospect.client_depuis).toLocaleDateString('fr-FR')}</span>}
+                        {prospect.projects?.length > 0 && (
+                            <span className="ml-auto flex flex-wrap gap-2">
+                                {prospect.projects.map((p) => (
+                                    <Link key={p.id} href={route('projects.show', p.id)}
+                                        className="rounded-md bg-white px-2 py-1 text-xs text-indigo-600 hover:bg-emerald-100">
+                                        📁 {p.titre} →
+                                    </Link>
+                                ))}
+                            </span>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className="mx-auto max-w-5xl grid gap-6 p-4 sm:p-6 lg:p-8 md:grid-cols-3">
                 {/* Colonne infos */}
                 <div className="md:col-span-2 space-y-6">
