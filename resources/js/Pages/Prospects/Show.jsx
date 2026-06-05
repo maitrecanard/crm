@@ -59,6 +59,9 @@ export default function Show({ prospect, statuts, typeOptions }) {
                     {/* Scénario d'appel téléphonique */}
                     <ScenarioAppel prospect={prospect} />
 
+                    {/* Scénario d'email */}
+                    <ScenarioEmail prospect={prospect} />
+
                     {/* Appels d'offres liés */}
                     {prospect.tenders && prospect.tenders.length > 0 && (
                         <div className="rounded-lg bg-white p-6 shadow">
@@ -244,6 +247,85 @@ function ScenarioAppel({ prospect }) {
                     </li>
                 ))}
             </ol>
+        </div>
+    );
+}
+
+function scenarioEmail(prospect) {
+    const e = prospect.entreprise;
+    const d = extraireDecideur(prospect);
+    const bonjour = d ? `Bonjour ${d.split(' ')[0]},` : 'Bonjour,';
+    let objet, accroche, cta;
+    switch (prospect.source_fichier) {
+        case 'clients_tech':
+            objet = `${e} — un renfort dev (Laravel/React) ?`;
+            accroche = `J’ai vu que ${e} développe son propre produit — beau travail.`;
+            cta = 'Auriez-vous 15 min cette semaine pour voir si je peux vous être utile sur un chantier en cours ?';
+            break;
+        case 'grands_comptes':
+            objet = `Renfort dev en régie — ${e}`;
+            accroche = 'Dans le cadre de vos projets digitaux, vous faites sans doute appel à des renforts externes.';
+            cta = 'Seriez-vous disponible pour un bref échange (15 min) afin que je vous présente mon profil et mes références ?';
+            break;
+        case 'besoins':
+            objet = `Votre consultation — ${e}`;
+            accroche = 'J’ai vu votre appel d’offres et je suis en mesure d’y répondre.';
+            cta = 'Pouvez-vous me confirmer que la consultation est ouverte et m’indiquer où récupérer le DCE ?';
+            break;
+        default:
+            objet = `${e} — votre site internet`;
+            accroche = `Je suis développeur web et j’accompagne les ${prospect.secteur || 'professionnels'}${prospect.localite ? ' de ' + prospect.localite : ''}.`;
+            cta = 'Votre site est-il à jour ? Je peux vous proposer un point gratuit de 15 min.';
+    }
+    const corps = `${bonjour}\n\n${accroche} Je suis développeur freelance — TechCare Solutions (Laravel/React).\n\n`
+        + `${cta}\n\nBonne journée,\n[TON PRÉNOM] · [TÉL] · [SITE / LinkedIn]`;
+    const relance = `${bonjour}\n\nJe me permets un petit up — si le sujet « renfort dev » est d’actualité chez ${e}, `
+        + 'je reste dispo 15 min quand vous voulez. Sinon dites-moi simplement et je n’insiste pas. 🙂\n\n[TON PRÉNOM]';
+    return { objet, corps, relance };
+}
+
+function ScenarioEmail({ prospect }) {
+    const { objet, corps, relance } = scenarioEmail(prospect);
+    const mailto = prospect.email
+        ? `mailto:${prospect.email}?subject=${encodeURIComponent(objet)}&body=${encodeURIComponent(corps)}`
+        : null;
+
+    return (
+        <div className="rounded-lg bg-white p-6 shadow">
+            <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-800">✉️ Scénario d’email</h3>
+                <div className="flex items-center gap-3">
+                    {mailto && (
+                        <a href={mailto}
+                            className="rounded-md bg-indigo-600 px-3 py-1 text-sm font-medium text-white">
+                            Écrire l’email
+                        </a>
+                    )}
+                    <button type="button" onClick={() => navigator.clipboard?.writeText(`Objet : ${objet}\n\n${corps}`)}
+                        className="text-sm text-indigo-600 underline">Copier</button>
+                </div>
+            </div>
+            {!prospect.email && (
+                <p className="mb-3 text-xs text-amber-600">Aucun email renseigné — à trouver (site /contact, LinkedIn).</p>
+            )}
+            <div className="space-y-3 text-sm">
+                <div>
+                    <div className="text-xs uppercase text-gray-400">Objet</div>
+                    <div className="font-medium text-gray-800">{objet}</div>
+                </div>
+                <div>
+                    <div className="text-xs uppercase text-gray-400">Corps</div>
+                    <div className="whitespace-pre-line text-gray-600">{corps}</div>
+                </div>
+                <details>
+                    <summary className="cursor-pointer text-xs uppercase text-gray-400">Relance (J+5)</summary>
+                    <div className="mt-1 flex items-start gap-2">
+                        <div className="whitespace-pre-line text-gray-600">{relance}</div>
+                        <button type="button" onClick={() => navigator.clipboard?.writeText(relance)}
+                            className="shrink-0 text-xs text-indigo-600 underline">Copier</button>
+                    </div>
+                </details>
+            </div>
         </div>
     );
 }
