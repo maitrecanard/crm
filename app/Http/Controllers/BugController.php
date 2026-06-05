@@ -25,11 +25,11 @@ class BugController extends Controller
 
         $bug = $project->bugs()->create($data + ['statut' => 'nouveau']);
 
-        $sent = $this->notify($bug);
+        $res = $this->notify($bug);
 
-        return back()->with('success', $sent
-            ? 'Bug enregistré — accusé de réception envoyé au client.'
-            : 'Bug enregistré (client non notifié : aucune adresse e-mail).');
+        return $res['sent']
+            ? back()->with('success', 'Ticket enregistré — accusé de réception envoyé au client.')
+            : back()->with('error', 'Ticket enregistré, mais e-mail NON envoyé : '.$res['reason']);
     }
 
     /** Mise à jour : un changement de STATUT notifie le client. */
@@ -54,14 +54,15 @@ class BugController extends Controller
 
         $bug->update($data);
 
-        $sent = false;
-        if ($statutChange) {
-            $sent = $this->notify($bug);
+        if (! $statutChange) {
+            return back()->with('success', 'Ticket mis à jour.');
         }
 
-        return back()->with('success', $statutChange
-            ? ($sent ? 'Statut mis à jour — client notifié par e-mail.' : 'Statut mis à jour (client non notifié : aucune adresse e-mail).')
-            : 'Bug mis à jour.');
+        $res = $this->notify($bug);
+
+        return $res['sent']
+            ? back()->with('success', 'Statut mis à jour — client notifié par e-mail.')
+            : back()->with('error', 'Statut mis à jour, mais e-mail NON envoyé : '.$res['reason']);
     }
 
     public function destroy(Bug $bug)
@@ -72,25 +73,28 @@ class BugController extends Controller
         return back(fallback: route('projects.show', $project));
     }
 
-    /** Envoie l'e-mail de suivi au client (au nom du support). Renvoie true si envoyé. */
-    private function notify(Bug $bug): bool
+    /**
+     * Envoie l'e-mail de suivi au client (au nom du support).
+     * @return array{sent: bool, reason: string}
+     */
+    private function notify(Bug $bug): array
     {
-        $email = $bug->project?->prospect?->email
-            ?: $bug->loadMissing('project.prospect')->project?->prospect?->email;
+        $bug->loadMissing('project.prospect');
+        $email = $bug->project?->prospect?->email;
 
         if (! $email) {
-            return false;
+            return ['sent' => false, 'reason' => 'le client n’a pas d’adresse e-mail (à renseigner sur sa fiche).'];
         }
 
         try {
             Mail::to($email)->send(new BugStatusMail($bug));
             $bug->forceFill(['notifie_le' => now()])->save();
 
-            return true;
+            return ['sent' => true, 'reason' => ''];
         } catch (\Throwable $e) {
             report($e);
 
-            return false;
+            return ['sent' => false, 'reason' => $e->getMessage()];
         }
     }
 }

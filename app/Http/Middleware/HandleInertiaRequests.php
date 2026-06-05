@@ -35,6 +35,10 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
             ],
             'vendeur' => config('crm.vendeur'),
+            'flash' => [
+                'success' => fn () => $request->session()->get('success'),
+                'error'   => fn () => $request->session()->get('error'),
+            ],
         ];
     }
 }

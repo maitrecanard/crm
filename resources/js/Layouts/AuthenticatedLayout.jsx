@@ -6,7 +6,9 @@ import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
-    const user = usePage().props.auth.user;
+    const page = usePage().props;
+    const user = page.auth.user;
+    const flash = page.flash || {};
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
@@ -216,6 +218,16 @@ export default function AuthenticatedLayout({ header, children }) {
                         {header}
                     </div>
                 </header>
+            )}
+
+            {(flash.success || flash.error) && (
+                <div className="mx-auto max-w-7xl px-4 pt-4 sm:px-6 lg:px-8">
+                    <div className={`rounded-md border p-3 text-sm ${flash.error
+                        ? 'border-red-200 bg-red-50 text-red-800'
+                        : 'border-green-200 bg-green-50 text-green-800'}`}>
+                        {flash.error || flash.success}
+                    </div>
+                </div>
             )}
 
             <main>{children}</main>
