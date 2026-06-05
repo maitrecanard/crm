@@ -6,6 +6,7 @@ export default function Create({ clients, statuts, preselect }) {
         prospect_id: preselect || (clients[0]?.id ?? ''),
         titre: '', description: '', statut: 'cadrage', budget: '',
         date_debut: '', date_fin_prevue: '',
+        url_prod: '', url_preprod: '', repo_git: '', hebergeur: '',
     });
     const submit = (e) => { e.preventDefault(); form.post(route('projects.store')); };
 
@@ -66,6 +67,28 @@ export default function Create({ clients, statuts, preselect }) {
                                 <label className="block text-sm font-medium text-gray-700">Fin prévue</label>
                                 <input type="date" value={form.data.date_fin_prevue} onChange={(e) => form.setData('date_fin_prevue', e.target.value)}
                                     className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Site en ligne (URL)</label>
+                                <input value={form.data.url_prod} onChange={(e) => form.setData('url_prod', e.target.value)}
+                                    placeholder="https://…" className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Préproduction (URL)</label>
+                                <input value={form.data.url_preprod} onChange={(e) => form.setData('url_preprod', e.target.value)}
+                                    placeholder="https://…" className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Dépôt Git</label>
+                                <input value={form.data.repo_git} onChange={(e) => form.setData('repo_git', e.target.value)}
+                                    placeholder="https://github.com/…" className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Hébergeur</label>
+                                <input value={form.data.hebergeur} onChange={(e) => form.setData('hebergeur', e.target.value)}
+                                    placeholder="o2switch, OVH…" className="mt-1 w-full rounded-md border-gray-300 text-sm" />
                             </div>
                         </div>
                         <p className="text-xs text-gray-400">Un plan de tâches standard sera pré-rempli (modifiable ensuite).</p>

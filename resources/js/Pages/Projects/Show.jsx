@@ -13,6 +13,10 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
     const form = useForm({
         titre: project.titre,
         description: project.description || '',
+        url_prod: project.url_prod || '',
+        url_preprod: project.url_preprod || '',
+        repo_git: project.repo_git || '',
+        hebergeur: project.hebergeur || '',
         statut: project.statut,
         budget: project.budget || '',
         date_debut: project.date_debut ? project.date_debut.substring(0, 10) : '',
@@ -104,6 +108,24 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
                             className="w-full rounded-md border-gray-300 text-sm" />
                     </div>
 
+                    <div className="rounded-lg bg-white p-6 shadow">
+                        <h3 className="mb-3 font-semibold text-gray-800">🌐 Environnements & accès</h3>
+                        <div className="space-y-3">
+                            <EnvField label="Site en ligne (production)" value={form.data.url_prod}
+                                onChange={(v) => form.setData('url_prod', v)} link />
+                            <EnvField label="Préproduction / staging" value={form.data.url_preprod}
+                                onChange={(v) => form.setData('url_preprod', v)} link />
+                            <EnvField label="Dépôt Git" value={form.data.repo_git}
+                                onChange={(v) => form.setData('repo_git', v)} link />
+                            <EnvField label="Hébergeur" value={form.data.hebergeur}
+                                onChange={(v) => form.setData('hebergeur', v)} />
+                        </div>
+                        <button onClick={save} disabled={form.processing}
+                            className="mt-4 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+                            {form.processing ? 'Enregistrement…' : 'Enregistrer'}
+                        </button>
+                    </div>
+
                     <BugsCard project={project} statutsBug={statutsBug} gravites={gravites}
                         typesBug={typesBug} recurrences={recurrences} />
                 </div>
@@ -171,6 +193,23 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
                 </div>
             </div>
         </AuthenticatedLayout>
+    );
+}
+
+function EnvField({ label, value, onChange, link = false }) {
+    const isUrl = link && value && /^https?:\/\//i.test(value);
+    return (
+        <div>
+            <label className="block text-xs font-medium uppercase text-gray-400">{label}</label>
+            <div className="mt-1 flex items-center gap-2">
+                <input value={value} onChange={(e) => onChange(e.target.value)}
+                    placeholder={link ? 'https://…' : ''} className="flex-1 rounded-md border-gray-300 text-sm" />
+                {isUrl && (
+                    <a href={value} target="_blank" rel="noreferrer"
+                        className="whitespace-nowrap text-xs text-indigo-600 hover:underline">ouvrir ↗</a>
+                )}
+            </div>
+        </div>
     );
 }
 

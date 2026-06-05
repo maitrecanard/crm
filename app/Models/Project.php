@@ -10,6 +10,7 @@ class Project extends Model
 {
     protected $fillable = [
         'prospect_id', 'tender_id', 'titre', 'description', 'statut',
+        'url_prod', 'url_preprod', 'repo_git', 'hebergeur',
         'budget', 'date_debut', 'date_fin_prevue', 'date_livraison', 'notes',
     ];
 
