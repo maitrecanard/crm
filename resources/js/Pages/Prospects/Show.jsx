@@ -276,10 +276,83 @@ function ScenarioAppel({ prospect, vd }) {
     );
 }
 
+// Domaine sous forme NOMINALE (« de l’immobilier », « du droit »…) : marche aussi bien
+// après « le secteur … » qu’après « les professionnels … ».
+function domaineSecteur(secteur) {
+    const s = (secteur || '').toLowerCase();
+    if (/immobil/.test(s)) return 'de l’immobilier';
+    if (/assur|banque/.test(s)) return 'de l’assurance';
+    if (/avocat|juridiqu|notair/.test(s)) return 'du droit';
+    if (/architect/.test(s)) return 'de l’architecture';
+    if (/comptab|expert-?compt/.test(s)) return 'de l’expertise comptable';
+    if (/santé|sante|médico|medico|médical|medical/.test(s)) return 'de la santé';
+    if (/hôtel|hotel|restau/.test(s)) return 'de l’hôtellerie-restauration';
+    if (/transport|logist/.test(s)) return 'du transport et de la logistique';
+    if (/industr/.test(s)) return 'de l’industrie';
+    if (/commerce|distrib/.test(s)) return 'du commerce';
+    if (/service/.test(s)) return 'des services aux entreprises';
+    return null;   // secteur public, inconnu, etc. -> on n’insère pas de domaine
+}
+
+// Mot juste pour désigner la structure du prospect (cabinet / agence / étude / entreprise).
+function structureMot(secteur) {
+    const s = (secteur || '').toLowerCase();
+    if (/cabinet/.test(s)) return 'cabinet';
+    if (/agence/.test(s)) return 'agence';
+    if (/étude|etude|notair/.test(s)) return 'étude';
+    return 'entreprise';
+}
+
+// Modèle « vitrine / conformité » : on a parcouru le site, repéré un point bloquant,
+// et on propose un diagnostic court. Personnalisé par secteur / ville / structure.
+function maquetteVitrine(prospect, vd, bonjour) {
+    const e = prospect.entreprise;
+    const ville = prospect.localite ? ` à ${prospect.localite}` : '';
+    const domaine = domaineSecteur(prospect.secteur);
+    const specialite = domaine ? ` spécialisé dans le secteur ${domaine}` : '';
+    const profDomaine = domaine ? ` ${domaine}` : '';
+    const structure = structureMot(prospect.secteur);
+    // Accroche par défaut — à VÉRIFIER/ajuster par prospect avant envoi (le scénario est éditable).
+    const probleme = 'les mentions légales obligatoires ne sont pas clairement visibles sur votre site';
+    const objet = `${e} — un point à vérifier sur votre site`;
+    const signature = vd.contact ? `${vd.prenom}\n${vd.societe} · ${vd.contact}` : `${vd.prenom}\n${vd.societe}`;
+
+    const corps =
+`${bonjour}
+
+J’ai parcouru votre site internet et j’ai beaucoup aimé vos réalisations${ville}. En tant que développeur${specialite}, j’ai cependant relevé un point qui pourrait poser problème : ${probleme}.
+
+Au-delà du risque réglementaire, c’est un élément indispensable pour rassurer vos futurs clients sur la transparence de votre ${structure}.
+
+J’accompagne les professionnels${profDomaine} à distance pour que leur vitrine web soit à la fois performante visuellement (React/Laravel) et 100 % conforme.
+
+Je serais ravi d’offrir au responsable un rapide diagnostic de 10 minutes, en visio ou par téléphone, pour faire le point sur la sécurité du site et vous donner les clés pour régler ça rapidement.
+
+À qui puis-je m’adresser au sein de l’équipe pour planifier ce court échange la semaine prochaine ?
+
+Excellente journée,
+${signature}`;
+
+    const relance =
+`${bonjour}
+
+Je me permets un petit up sur mon message précédent. Si la mise en conformité de votre site est un sujet d’actualité chez ${e}, je reste disponible 10 min quand vous voulez — sinon dites-le-moi simplement et je n’insisterai pas. 🙂
+
+${vd.prenom}`;
+
+    return { objet, corps, relance };
+}
+
 function scenarioEmail(prospect, vd) {
     const e = prospect.entreprise;
     const d = extraireDecideur(prospect);
     const bonjour = d ? `Bonjour ${d.split(' ')[0]},` : 'Bonjour,';
+
+    // Prospects « vitrine » (pme, artisans, professions libérales…) -> maquette conformité.
+    if (!['clients_tech', 'grands_comptes', 'besoins'].includes(prospect.source_fichier)) {
+        return maquetteVitrine(prospect, vd, bonjour);
+    }
+
     let objet, accroche, cta;
     switch (prospect.source_fichier) {
         case 'clients_tech':
