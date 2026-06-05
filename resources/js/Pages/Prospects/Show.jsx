@@ -2,7 +2,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function Show({ prospect, statuts, typeOptions }) {
+export default function Show({ prospect, statuts, typeOptions, vendeur }) {
+    const vd = vendeur || { societe: 'TechCare Solutions', prenom: '[TON PRÉNOM]', contact: '' };
     const form = useForm({
         statut: prospect.statut,
         prochaine_relance: prospect.prochaine_relance ? prospect.prochaine_relance.substring(0, 10) : '',
@@ -58,10 +59,10 @@ export default function Show({ prospect, statuts, typeOptions }) {
                     </div>
 
                     {/* Scénario d'appel téléphonique */}
-                    <ScenarioAppel prospect={prospect} />
+                    <ScenarioAppel prospect={prospect} vd={vd} />
 
                     {/* Scénario d'email */}
-                    <ScenarioEmail prospect={prospect} />
+                    <ScenarioEmail prospect={prospect} vd={vd} />
 
                     {/* Scénario LinkedIn */}
                     <ScenarioLinkedIn prospect={prospect} />
@@ -241,12 +242,12 @@ function ScenarioEditable({ prospect, slug, titre, defaut, actions, hint }) {
     );
 }
 
-function defautAppel(prospect) {
+function defautAppel(prospect, vd) {
     const v = valueProp(prospect);
     const qui = extraireDecideur(prospect) || 'le responsable';
     return [
-        `1. Accroche — « Bonjour, je souhaiterais parler à ${qui}. [TON PRÉNOM] de TechCare Solutions, vous avez 30 secondes ? »`,
-        `2. Raison — « Je me permets de vous appeler car ${v.raison}. Côté TechCare, ${v.pitch}. »`,
+        `1. Accroche — « Bonjour, je souhaiterais parler à ${qui}. ${vd.prenom} de ${vd.societe}, vous avez 30 secondes ? »`,
+        `2. Raison — « Je me permets de vous appeler car ${v.raison}. Côté ${vd.societe}, ${v.pitch}. »`,
         `3. Question — « ${v.question} »  (laisser parler, écouter le besoin)`,
         `4. RDV — « Le mieux, c’est qu’on prenne 15 min. Plutôt mardi ou jeudi en fin de journée ? »`,
         `5. Objections —\n   • Pas le temps → « 15 min suffisent, je m’adapte à votre agenda. »\n   • Déjà un prestataire → « Je viens en renfort, pas en remplacement. »\n   • Envoyez un mail → « Avec plaisir, et je vous rappelle jeudi ? »\n   • Pas de budget → « On échange 15 min pour le moment venu ? »`,
@@ -254,11 +255,11 @@ function defautAppel(prospect) {
     ].join('\n\n');
 }
 
-function ScenarioAppel({ prospect }) {
+function ScenarioAppel({ prospect, vd }) {
     return (
         <ScenarioEditable
             prospect={prospect} slug="appel" titre="📞 Scénario d’appel"
-            defaut={defautAppel(prospect)}
+            defaut={defautAppel(prospect, vd)}
             actions={(text) => prospect.telephone && (
                 <a href={`tel:${prospect.telephone.replace(/\s/g, '')}`}
                     className="rounded-md bg-green-600 px-3 py-1 text-sm font-medium text-white">
@@ -272,7 +273,7 @@ function ScenarioAppel({ prospect }) {
     );
 }
 
-function scenarioEmail(prospect) {
+function scenarioEmail(prospect, vd) {
     const e = prospect.entreprise;
     const d = extraireDecideur(prospect);
     const bonjour = d ? `Bonjour ${d.split(' ')[0]},` : 'Bonjour,';
@@ -298,15 +299,16 @@ function scenarioEmail(prospect) {
             accroche = `Je suis développeur web et j’accompagne les ${prospect.secteur || 'professionnels'}${prospect.localite ? ' de ' + prospect.localite : ''}.`;
             cta = 'Votre site est-il à jour ? Je peux vous proposer un point gratuit de 15 min.';
     }
-    const corps = `${bonjour}\n\n${accroche} Je suis développeur freelance — TechCare Solutions (Laravel/React).\n\n`
-        + `${cta}\n\nBonne journée,\n[TON PRÉNOM] · [TÉL] · [SITE / LinkedIn]`;
+    const signature = vd.contact ? `${vd.prenom} · ${vd.contact}` : `${vd.prenom} · [tél · site]`;
+    const corps = `${bonjour}\n\n${accroche} Je suis développeur freelance — ${vd.societe} (Laravel/React).\n\n`
+        + `${cta}\n\nBonne journée,\n${signature}`;
     const relance = `${bonjour}\n\nJe me permets un petit up — si le sujet « renfort dev » est d’actualité chez ${e}, `
         + 'je reste dispo 15 min quand vous voulez. Sinon dites-moi simplement et je n’insiste pas. 🙂\n\n[TON PRÉNOM]';
     return { objet, corps, relance };
 }
 
-function defautEmail(prospect) {
-    const { objet, corps } = scenarioEmail(prospect);
+function defautEmail(prospect, vd) {
+    const { objet, corps } = scenarioEmail(prospect, vd);
     return `Objet : ${objet}\n\n${corps}`;
 }
 
@@ -322,11 +324,11 @@ function mailtoDepuisTexte(prospect, text) {
     return `mailto:${prospect.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
-function ScenarioEmail({ prospect }) {
+function ScenarioEmail({ prospect, vd }) {
     return (
         <ScenarioEditable
             prospect={prospect} slug="email" titre="✉️ Scénario d’email"
-            defaut={defautEmail(prospect)}
+            defaut={defautEmail(prospect, vd)}
             actions={(text) => {
                 const m = mailtoDepuisTexte(prospect, text);
                 return m && (
