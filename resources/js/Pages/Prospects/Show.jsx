@@ -56,6 +56,9 @@ export default function Show({ prospect, statuts, typeOptions }) {
                         )}
                     </div>
 
+                    {/* Scénario d'appel téléphonique */}
+                    <ScenarioAppel prospect={prospect} />
+
                     {/* Appels d'offres liés */}
                     {prospect.tenders && prospect.tenders.length > 0 && (
                         <div className="rounded-lg bg-white p-6 shadow">
@@ -143,6 +146,104 @@ function Info({ label, value }) {
         <div>
             <dt className="text-xs uppercase text-gray-400">{label}</dt>
             <dd className="text-gray-800">{value || '—'}</dd>
+        </div>
+    );
+}
+
+// --- Scénario d'appel personnalisé ---------------------------------------
+
+function extraireDecideur(prospect) {
+    const m = (prospect.signal_alerte || '').match(
+        /(?:dirigeant|contacter en direct)\s*:?\s*([A-ZÀ-Ÿ][\wÀ-ÿ'’.-]+(?:\s+[A-ZÀ-Ÿ][\wÀ-ÿ'’.-]+)?)/i
+    );
+    return m ? m[1].trim() : null;
+}
+
+function valueProp(prospect) {
+    const e = prospect.entreprise;
+    switch (prospect.source_fichier) {
+        case 'clients_tech':
+            return {
+                raison: `je vois que ${e} développe son propre produit logiciel`,
+                pitch: 'développeur freelance (Laravel/React), j’aide les éditeurs et scale-ups à accélérer leur delivery produit, en renfort de l’équipe',
+                question: 'Est-ce qu’il vous arrive de prendre des renforts dev externes sur votre roadmap ?',
+            };
+        case 'grands_comptes':
+            return {
+                raison: `vous menez sûrement des projets de transformation digitale chez ${e}`,
+                pitch: 'développeur freelance, j’interviens en renfort / régie sur les chantiers digitaux des grands comptes',
+                question: 'Vous faites appel à des prestataires externes pour vos projets web/applicatifs ?',
+            };
+        case 'besoins':
+            return {
+                raison: `j’ai vu votre appel d’offres « ${(prospect.signal_alerte || '').replace(/^Besoin exprimé\s*:\s*«?\s*/i, '').split('»')[0].slice(0, 60)} »`,
+                pitch: 'développeur, je peux répondre à votre consultation',
+                question: 'La consultation est-elle toujours ouverte, et qui la pilote ?',
+            };
+        default:
+            return {
+                raison: `j’accompagne les ${prospect.secteur || 'professionnels'} ${prospect.localite ? 'de ' + prospect.localite : ''}`,
+                pitch: 'je crée et modernise des sites web qui ramènent des clients',
+                question: 'Votre site internet est-il à jour, ou c’est un sujet que vous repoussez un peu ?',
+            };
+    }
+}
+
+function ScenarioAppel({ prospect }) {
+    const v = valueProp(prospect);
+    const qui = extraireDecideur(prospect);
+    const demande = qui ? `${qui}` : 'le responsable';
+
+    const scenario = [
+        ['1. Accroche (0-20 s)',
+            `« Bonjour, je souhaiterais parler à ${demande}. … ` +
+            `[TON PRÉNOM] de TechCare Solutions, vous avez 30 secondes ? »`],
+        ['2. Raison de l’appel',
+            `« Je me permets de vous appeler car ${v.raison}. Côté TechCare, ${v.pitch}. »`],
+        ['3. Question d’accroche',
+            `« ${v.question} »  → on laisse parler, on écoute le besoin.`],
+        ['4. Décrocher un échange',
+            '« Le mieux, c’est qu’on prenne 15 min pour voir si je peux vous être utile concrètement. ' +
+            'Vous préférez plutôt mardi ou jeudi en fin de journée ? »'],
+        ['5. Réponses aux objections',
+            '• « Pas le temps » → « Justement, 15 min suffisent, je m’adapte à votre agenda. »\n' +
+            '• « On a déjà une équipe/un prestataire » → « Parfait, je viens en renfort sur les pics ou les sujets pointus, pas en remplacement. »\n' +
+            '• « Envoyez un mail » → « Avec plaisir — je vous envoie 3 lignes + 2 références ; je vous rappelle jeudi pour votre avis ? »\n' +
+            '• « Pas de budget » → « Compris. On échange quand même 15 min pour que je sois en tête le moment venu ? »'],
+        ['6. Clôture',
+            'Reformuler le prochain pas (RDV, mail, rappel), remercier. → puis logguer l’appel dans l’historique ci-dessous.'],
+    ];
+
+    const texte = `Scénario d'appel — ${prospect.entreprise}\n` +
+        (prospect.telephone ? `Tél : ${prospect.telephone}\n` : '') + '\n' +
+        scenario.map(([t, c]) => `${t}\n${c}`).join('\n\n');
+
+    return (
+        <div className="rounded-lg bg-white p-6 shadow">
+            <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-800">📞 Scénario d’appel</h3>
+                <div className="flex items-center gap-3">
+                    {prospect.telephone && (
+                        <a href={`tel:${prospect.telephone.replace(/\s/g, '')}`}
+                            className="rounded-md bg-green-600 px-3 py-1 text-sm font-medium text-white">
+                            Appeler {prospect.telephone}
+                        </a>
+                    )}
+                    <button type="button" onClick={() => navigator.clipboard?.writeText(texte)}
+                        className="text-sm text-indigo-600 underline">Copier</button>
+                </div>
+            </div>
+            {!prospect.telephone && (
+                <p className="mb-3 text-xs text-amber-600">Aucun numéro renseigné — à compléter avant l’appel.</p>
+            )}
+            <ol className="space-y-3">
+                {scenario.map(([titre, contenu]) => (
+                    <li key={titre}>
+                        <div className="text-sm font-medium text-gray-700">{titre}</div>
+                        <div className="whitespace-pre-line text-sm text-gray-600">{contenu}</div>
+                    </li>
+                ))}
+            </ol>
         </div>
     );
 }
