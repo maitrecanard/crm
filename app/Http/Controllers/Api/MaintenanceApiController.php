@@ -45,4 +45,26 @@ class MaintenanceApiController extends Controller
 
         return response()->json(['output' => trim(Artisan::output())]);
     }
+
+    /**
+     * Régénère le token API : crée un nouveau token et révoque TOUS les autres
+     * (dont celui, fuité, présent dans l'historique git). Authentifié avec
+     * l'ancien token ; renvoie le nouveau (à reporter dans .crm.env).
+     */
+    public function rotateToken(\Illuminate\Http\Request $request)
+    {
+        abort_unless(config('crm.allow_remote_migrate'), 403, 'Administration distante désactivée.');
+
+        $user = $request->user();
+        $new = $user->createToken('crm-sdk');
+        $newId = $new->accessToken->getKey();
+
+        // Révoque tous les autres tokens (ancien token SDK fuité inclus).
+        $user->tokens()->where('id', '!=', $newId)->delete();
+
+        return response()->json([
+            'token'   => $new->plainTextToken,
+            'message' => 'Token régénéré. Anciens tokens révoqués.',
+        ]);
+    }
 }

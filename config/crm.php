@@ -19,4 +19,5 @@ return [
     */
     'allow_registration'   => (bool) env('CRM_ALLOW_REGISTRATION', false),
     'allow_remote_migrate' => (bool) env('CRM_ALLOW_REMOTE_MIGRATE', true),
+    'require_2fa'          => (bool) env('CRM_REQUIRE_2FA', true),
 ];

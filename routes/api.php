@@ -34,4 +34,5 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- Maintenance à distance (migrations) déclenchable par le SDK ---
     Route::get('/maintenance/migrate-status', [MaintenanceApiController::class, 'status']);
     Route::post('/maintenance/migrate', [MaintenanceApiController::class, 'migrate']);
+    Route::post('/maintenance/rotate-token', [MaintenanceApiController::class, 'rotateToken']);
 });
