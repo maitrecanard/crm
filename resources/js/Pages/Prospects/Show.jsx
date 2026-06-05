@@ -137,11 +137,14 @@ export default function Show({ prospect, statuts, typeOptions, vendeur }) {
                             <textarea rows="6" value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)}
                                 className="mt-1 w-full rounded-md border-gray-300 text-sm" />
                         </div>
-                        <button disabled={form.processing}
+                        <button type="submit" disabled={form.processing}
                             className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-                            Enregistrer
+                            {form.processing ? 'Enregistrement…' : 'Enregistrer'}
                         </button>
                         {form.recentlySuccessful && <p className="text-sm text-green-600">Enregistré ✓</p>}
+                        {Object.values(form.errors).map((err, i) => (
+                            <p key={i} className="text-sm text-red-600">{err}</p>
+                        ))}
                     </form>
                 </div>
             </div>
