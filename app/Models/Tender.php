@@ -8,12 +8,14 @@ class Tender extends Model
 {
     protected $fillable = [
         'prospect_id', 'idweb', 'objet', 'acheteur', 'departement', 'procedure',
-        'date_parution', 'date_limite', 'url', 'statut', 'notes',
+        'date_parution', 'date_limite', 'url', 'statut', 'notes', 'dossier', 'montant_ht',
     ];
 
     protected $casts = [
         'date_parution' => 'date',
         'date_limite'   => 'datetime',
+        'dossier'       => 'array',
+        'montant_ht'    => 'integer',
     ];
 
     protected $appends = ['jours_restants'];

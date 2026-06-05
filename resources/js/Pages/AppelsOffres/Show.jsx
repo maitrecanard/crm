@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 
 export default function Show({ tender, statuts }) {
     const form = useForm({ statut: tender.statut, notes: tender.notes || '' });
@@ -59,11 +60,7 @@ export default function Show({ tender, statuts }) {
                         )}
                     </div>
 
-                    <div className="rounded-lg bg-indigo-50 p-4 text-sm text-indigo-900">
-                        💡 Le dossier de réponse pré-rempli (mémoire + DPGF + AE) se génère côté moteur :
-                        <code className="mx-1 rounded bg-white px-1">python3 generer_dossier.py {tender.idweb}</code>
-                        → dossier dans <code className="rounded bg-white px-1">dossiers/</code>.
-                    </div>
+                    <DossierCard tender={tender} />
                 </div>
 
                 <div>
@@ -98,6 +95,100 @@ function Info({ label, value }) {
         <div>
             <dt className="text-xs uppercase text-gray-400">{label}</dt>
             <dd className="text-gray-800">{value || '—'}</dd>
+        </div>
+    );
+}
+
+// Carte « Dossier de réponse » rattaché à l'AO (mémoire, DPGF, AE) + checklist de dépôt.
+function DossierCard({ tender }) {
+    const d = tender.dossier;
+    if (!d) {
+        return (
+            <div className="rounded-lg bg-indigo-50 p-4 text-sm text-indigo-900">
+                💡 Aucun dossier rattaché. Génère-le puis pousse-le côté moteur :
+                <code className="mx-1 rounded bg-white px-1">python3 generer_dossier.py {tender.idweb}</code>
+                <code className="mx-1 rounded bg-white px-1">python3 push_dossier.py {tender.idweb}</code>
+            </div>
+        );
+    }
+    const docs = [
+        ['Résumé', d.resume],
+        ['Mémoire technique', d.memoire],
+        ['DPGF (chiffrage)', d.dpgf],
+        ['Acte d’engagement', d.acte],
+    ].filter(([, c]) => c);
+
+    return (
+        <div className="rounded-lg bg-white p-6 shadow">
+            <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-800">📁 Dossier de réponse</h3>
+                {tender.montant_ht ? (
+                    <span className="rounded bg-emerald-50 px-2 py-1 text-sm font-semibold text-emerald-700">
+                        {tender.montant_ht.toLocaleString('fr-FR')} € HT
+                    </span>
+                ) : null}
+            </div>
+            {d.generated_at && <p className="mb-3 text-xs text-gray-400">Généré le {d.generated_at}</p>}
+            <Checklist tender={tender} items={d.checklist || []} />
+            <div className="mt-4 space-y-2">
+                {docs.map(([titre, contenu]) => <Doc key={titre} titre={titre} contenu={contenu} />)}
+            </div>
+        </div>
+    );
+}
+
+function Doc({ titre, contenu }) {
+    const [copied, setCopied] = useState(false);
+    const copy = () => navigator.clipboard?.writeText(contenu).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    });
+    return (
+        <details className="rounded-md border border-gray-200">
+            <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-sm font-medium text-gray-700">
+                <span>{titre}</span>
+                <button type="button" onClick={(e) => { e.preventDefault(); copy(); }}
+                    className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200">
+                    {copied ? 'Copié ✓' : 'Copier'}
+                </button>
+            </summary>
+            <pre className="max-h-96 overflow-auto whitespace-pre-wrap border-t border-gray-100 px-3 py-2 text-xs leading-relaxed text-gray-800">{contenu}</pre>
+        </details>
+    );
+}
+
+// Checklist de dépôt cochable — l'état est enregistré (PUT) sur le dossier de l'AO.
+function Checklist({ tender, items }) {
+    const [list, setList] = useState(items);
+    const [busy, setBusy] = useState(false);
+    if (!list.length) return null;
+
+    const toggle = (i) => {
+        const next = list.map((it, idx) => (idx === i ? { ...it, done: !it.done } : it));
+        setList(next);
+        setBusy(true);
+        router.put(route('ao.checklist', tender.id), { checklist: next }, {
+            preserveScroll: true, preserveState: true, onFinish: () => setBusy(false),
+        });
+    };
+    const done = list.filter((i) => i.done).length;
+
+    return (
+        <div className="rounded-md bg-gray-50 p-3">
+            <p className="mb-2 text-xs font-semibold uppercase text-gray-500">
+                Avant dépôt — {done}/{list.length} {busy && '…'}
+            </p>
+            <ul className="space-y-1">
+                {list.map((it, i) => (
+                    <li key={i}>
+                        <label className="flex items-start gap-2 text-sm text-gray-700">
+                            <input type="checkbox" checked={it.done} onChange={() => toggle(i)}
+                                className="mt-0.5 rounded border-gray-300 text-indigo-600" />
+                            <span className={it.done ? 'text-gray-400 line-through' : ''}>{it.label}</span>
+                        </label>
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 }

@@ -22,6 +22,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/appels-offres/refresh', [AppelOffreController::class, 'refresh'])->name('ao.refresh');
     Route::get('/appels-offres/{tender}', [AppelOffreController::class, 'show'])->name('ao.show');
     Route::put('/appels-offres/{tender}', [AppelOffreController::class, 'update'])->name('ao.update');
+    Route::put('/appels-offres/{tender}/checklist', [AppelOffreController::class, 'saveChecklist'])->name('ao.checklist');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

@@ -60,4 +60,20 @@ class AppelOffreController extends Controller
 
         return back()->with('success', 'Appels d\'offres rafraîchis depuis BOAMP.');
     }
+
+    /** Met à jour l'état coché de la checklist de dépôt du dossier. */
+    public function saveChecklist(Request $request, Tender $tender)
+    {
+        $data = $request->validate([
+            'checklist'              => ['present', 'array'],
+            'checklist.*.label'      => ['required', 'string', 'max:300'],
+            'checklist.*.done'       => ['required', 'boolean'],
+        ]);
+
+        $dossier = $tender->dossier ?? [];
+        $dossier['checklist'] = $data['checklist'];
+        $tender->update(['dossier' => $dossier]);
+
+        return back(fallback: route('ao.show', $tender));
+    }
 }

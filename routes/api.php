@@ -28,4 +28,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/prospects', [ProspectApiController::class, 'store']);
     Route::post('/prospects/bulk', [ProspectApiController::class, 'bulk']);
     Route::post('/tenders/bulk', [TenderApiController::class, 'bulk']);
+    Route::post('/tenders/dossier', [TenderApiController::class, 'attachDossier']);
 });
