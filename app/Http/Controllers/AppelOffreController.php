@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Tender;
 use App\Services\DossierDoc;
+use App\Services\DossierXlsx;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -73,6 +74,21 @@ class AppelOffreController extends Controller
         return response($html, 200, [
             'Content-Type'        => 'application/msword; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="dossier-'.$idweb.'.doc"',
+        ]);
+    }
+
+    /** Télécharge l'annexe financière (DPGF + BPU) en .xlsx (Excel). */
+    public function downloadXlsx(Tender $tender)
+    {
+        abort_unless(is_array($tender->dossier) && $tender->dossier, 404, 'Aucun dossier rattaché à cet appel d\'offres.');
+
+        $idweb = $tender->idweb ?: (string) $tender->id;
+        $bin = DossierXlsx::build($tender->dossier, $idweb);
+        abort_if($bin === null, 404, 'Pas de DPGF exploitable dans ce dossier.');
+
+        return response($bin, 200, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="annexe-financiere-'.$idweb.'.xlsx"',
         ]);
     }
 

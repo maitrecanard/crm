@@ -132,10 +132,16 @@ function DossierCard({ tender }) {
                 {d.generated_at
                     ? <p className="text-xs text-gray-400">Généré le {d.generated_at}</p>
                     : <span />}
-                <a href={route('ao.dossier.doc', tender.id)}
-                    className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700">
-                    ⬇ Télécharger .doc (Word)
-                </a>
+                <div className="flex gap-2">
+                    <a href={route('ao.dossier.doc', tender.id)}
+                        className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700">
+                        ⬇ .doc (Word)
+                    </a>
+                    <a href={route('ao.dossier.xlsx', tender.id)}
+                        className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
+                        ⬇ .xlsx (annexe financière)
+                    </a>
+                </div>
             </div>
             <Checklist tender={tender} items={d.checklist || []} />
             <div className="mt-4 space-y-2">

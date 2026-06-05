@@ -24,6 +24,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/appels-offres/{tender}', [AppelOffreController::class, 'update'])->name('ao.update');
     Route::put('/appels-offres/{tender}/checklist', [AppelOffreController::class, 'saveChecklist'])->name('ao.checklist');
     Route::get('/appels-offres/{tender}/dossier.doc', [AppelOffreController::class, 'downloadDoc'])->name('ao.dossier.doc');
+    Route::get('/appels-offres/{tender}/annexe.xlsx', [AppelOffreController::class, 'downloadXlsx'])->name('ao.dossier.xlsx');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
