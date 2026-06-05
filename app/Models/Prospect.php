@@ -26,6 +26,7 @@ class Prospect extends Model
         'rdv'         => 'RDV',
         'gagne'       => 'Gagné',
         'perdu'       => 'Perdu',
+        'ignore'      => 'Ignoré',
     ];
 
     public function interactions(): HasMany
