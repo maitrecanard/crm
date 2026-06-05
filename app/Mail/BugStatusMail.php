@@ -22,11 +22,9 @@ class BugStatusMail extends Mailable
 
     public function envelope(): Envelope
     {
-        $libelle = Bug::STATUTS[$this->bug->statut] ?? $this->bug->statut;
-
         return new Envelope(
             from: new Address(config('crm.support.email'), config('crm.support.name')),
-            subject: "[Support] {$this->bug->titre} — {$libelle}",
+            subject: "[{$this->bug->subjectPrefix()}] {$this->bug->titre} — {$this->bug->statutLabel()}",
         );
     }
 
@@ -34,8 +32,9 @@ class BugStatusMail extends Mailable
     {
         return new Content(view: 'emails.bug-status', with: [
             'bug'     => $this->bug,
-            'libelle' => Bug::STATUTS[$this->bug->statut] ?? $this->bug->statut,
-            'message' => Bug::MESSAGES[$this->bug->statut] ?? '',
+            'libelle' => $this->bug->statutLabel(),
+            'message' => $this->bug->clientMessage(),
+            'typeLabel' => Bug::TYPES[$this->bug->type] ?? 'Intervention',
             'societe' => config('crm.support.name'),
         ]);
     }

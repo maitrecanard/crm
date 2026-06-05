@@ -14,10 +14,13 @@ class BugController extends Controller
     public function store(Request $request, Project $project)
     {
         $data = $request->validate([
-            'titre'       => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'gravite'     => ['required', 'in:'.implode(',', array_keys(Bug::GRAVITES))],
-            'issue_git'   => ['nullable', 'string', 'max:255'],
+            'type'               => ['required', 'in:'.implode(',', array_keys(Bug::TYPES))],
+            'titre'              => ['required', 'string', 'max:255'],
+            'description'        => ['nullable', 'string'],
+            'gravite'            => ['required', 'in:'.implode(',', array_keys(Bug::GRAVITES))],
+            'recurrence'         => ['nullable', 'in:'.implode(',', array_keys(Bug::RECURRENCES))],
+            'prochaine_echeance' => ['nullable', 'date'],
+            'issue_git'          => ['nullable', 'string', 'max:255'],
         ]);
 
         $bug = $project->bugs()->create($data + ['statut' => 'nouveau']);
@@ -33,11 +36,14 @@ class BugController extends Controller
     public function update(Request $request, Bug $bug)
     {
         $data = $request->validate([
-            'titre'       => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['sometimes', 'nullable', 'string'],
-            'statut'      => ['sometimes', 'required', 'in:'.implode(',', array_keys(Bug::STATUTS))],
-            'gravite'     => ['sometimes', 'required', 'in:'.implode(',', array_keys(Bug::GRAVITES))],
-            'issue_git'   => ['sometimes', 'nullable', 'string', 'max:255'],
+            'type'               => ['sometimes', 'required', 'in:'.implode(',', array_keys(Bug::TYPES))],
+            'titre'              => ['sometimes', 'required', 'string', 'max:255'],
+            'description'        => ['sometimes', 'nullable', 'string'],
+            'statut'             => ['sometimes', 'required', 'in:'.implode(',', array_keys(Bug::STATUTS))],
+            'gravite'            => ['sometimes', 'required', 'in:'.implode(',', array_keys(Bug::GRAVITES))],
+            'recurrence'         => ['sometimes', 'nullable', 'in:'.implode(',', array_keys(Bug::RECURRENCES))],
+            'prochaine_echeance' => ['sometimes', 'nullable', 'date'],
+            'issue_git'          => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
         $statutChange = array_key_exists('statut', $data) && $data['statut'] !== $bug->statut;

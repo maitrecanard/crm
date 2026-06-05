@@ -9,7 +9,7 @@ const TACHE_COLORS = {
 };
 const NEXT = { a_faire: 'en_cours', en_cours: 'fait', fait: 'a_faire' };
 
-export default function Show({ project, statuts, statutsTache, statutsBug, gravites }) {
+export default function Show({ project, statuts, statutsTache, statutsBug, gravites, typesBug, recurrences }) {
     const form = useForm({
         titre: project.titre,
         description: project.description || '',
@@ -104,7 +104,8 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
                             className="w-full rounded-md border-gray-300 text-sm" />
                     </div>
 
-                    <BugsCard project={project} statutsBug={statutsBug} gravites={gravites} />
+                    <BugsCard project={project} statutsBug={statutsBug} gravites={gravites}
+                        typesBug={typesBug} recurrences={recurrences} />
                 </div>
 
                 {/* Colonne droite : pilotage */}
@@ -178,21 +179,31 @@ const GRAVITE_COLORS = {
     majeur: 'bg-amber-100 text-amber-700',
     bloquant: 'bg-red-100 text-red-700',
 };
+const TYPE_COLORS = {
+    bug: 'bg-rose-100 text-rose-700',
+    maintenance: 'bg-sky-100 text-sky-700',
+    evolution: 'bg-violet-100 text-violet-700',
+};
+const TYPE_ICONS = { bug: '🐛', maintenance: '🔧', evolution: '✨' };
 
-// Suivi de production : bugs déclarés par le client + notification e-mail à chaque étape.
-function BugsCard({ project, statutsBug, gravites }) {
+// Suivi de production : interventions (bug / maintenance / évolution) + notif e-mail à chaque étape.
+function BugsCard({ project, statutsBug, gravites, typesBug, recurrences }) {
     const bugs = project.bugs || [];
     const clientEmail = project.prospect?.email;
-    const add = useForm({ titre: '', description: '', gravite: 'majeur', issue_git: '' });
+    const add = useForm({
+        type: 'bug', titre: '', description: '', gravite: 'majeur',
+        recurrence: 'mensuelle', prochaine_echeance: '', issue_git: '',
+    });
     const submit = (e) => {
         e.preventDefault();
         add.post(route('bugs.store', project.id), { preserveScroll: true, onSuccess: () => add.reset() });
     };
+    const isMaint = add.data.type === 'maintenance';
 
     return (
         <div className="rounded-lg bg-white p-6 shadow">
             <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800">🐛 Suivi de production</h3>
+                <h3 className="font-semibold text-gray-800">🔧 Suivi de production</h3>
                 <span className="text-xs text-gray-400">{bugs.length} ticket{bugs.length > 1 ? 's' : ''}</span>
             </div>
 
@@ -203,19 +214,37 @@ function BugsCard({ project, statutsBug, gravites }) {
             )}
 
             <ul className="space-y-3">
-                {bugs.map((b) => <BugRow key={b.id} bug={b} statutsBug={statutsBug} gravites={gravites} />)}
-                {!bugs.length && <li className="text-sm text-gray-400">Aucun bug signalé.</li>}
+                {bugs.map((b) => <BugRow key={b.id} bug={b} statutsBug={statutsBug} gravites={gravites} typesBug={typesBug} />)}
+                {!bugs.length && <li className="text-sm text-gray-400">Aucune intervention.</li>}
             </ul>
 
             <form onSubmit={submit} className="mt-4 space-y-2 border-t border-gray-100 pt-4">
                 <div className="flex gap-2">
-                    <input value={add.data.titre} onChange={(e) => add.setData('titre', e.target.value)}
-                        placeholder="Bug signalé par le client…" className="flex-1 rounded-md border-gray-300 text-sm" />
-                    <select value={add.data.gravite} onChange={(e) => add.setData('gravite', e.target.value)}
+                    <select value={add.data.type} onChange={(e) => add.setData('type', e.target.value)}
                         className="rounded-md border-gray-300 text-sm">
-                        {Object.entries(gravites).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                        {Object.entries(typesBug).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                     </select>
+                    <input value={add.data.titre} onChange={(e) => add.setData('titre', e.target.value)}
+                        placeholder={isMaint ? 'Maintenance (ex. mises à jour de sécurité)…' : 'Sujet…'}
+                        className="flex-1 rounded-md border-gray-300 text-sm" />
+                    {!isMaint && (
+                        <select value={add.data.gravite} onChange={(e) => add.setData('gravite', e.target.value)}
+                            className="rounded-md border-gray-300 text-sm">
+                            {Object.entries(gravites).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                        </select>
+                    )}
                 </div>
+                {isMaint && (
+                    <div className="flex gap-2">
+                        <select value={add.data.recurrence} onChange={(e) => add.setData('recurrence', e.target.value)}
+                            className="flex-1 rounded-md border-gray-300 text-sm">
+                            {Object.entries(recurrences).map(([k, v]) => <option key={k} value={k}>Périodicité : {v}</option>)}
+                        </select>
+                        <input type="date" value={add.data.prochaine_echeance} title="Prochaine échéance"
+                            onChange={(e) => add.setData('prochaine_echeance', e.target.value)}
+                            className="rounded-md border-gray-300 text-sm" />
+                    </div>
+                )}
                 <textarea rows="2" value={add.data.description} onChange={(e) => add.setData('description', e.target.value)}
                     placeholder="Description (reprise dans l’e-mail envoyé au client)…" className="w-full rounded-md border-gray-300 text-sm" />
                 <input value={add.data.issue_git} onChange={(e) => add.setData('issue_git', e.target.value)}
@@ -223,7 +252,7 @@ function BugsCard({ project, statutsBug, gravites }) {
                 <div className="flex justify-end">
                     <button disabled={add.processing || !add.data.titre}
                         className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">
-                        Enregistrer + accusé de réception
+                        Enregistrer + notifier le client
                     </button>
                 </div>
             </form>
@@ -231,7 +260,7 @@ function BugsCard({ project, statutsBug, gravites }) {
     );
 }
 
-function BugRow({ bug, statutsBug, gravites }) {
+function BugRow({ bug, statutsBug, gravites, typesBug }) {
     const [issue, setIssue] = useState(bug.issue_git || '');
     const setStatut = (statut) => router.put(route('bugs.update', bug.id), { statut },
         { preserveScroll: true, preserveState: true });
@@ -249,7 +278,12 @@ function BugRow({ bug, statutsBug, gravites }) {
     return (
         <li className="rounded-md border border-gray-200 p-3">
             <div className="flex items-center gap-2">
-                <span className={`rounded px-2 py-0.5 text-xs font-medium ${GRAVITE_COLORS[bug.gravite]}`}>{gravites[bug.gravite]}</span>
+                <span className={`rounded px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[bug.type] || 'bg-gray-100'}`}>
+                    {TYPE_ICONS[bug.type]} {typesBug[bug.type] || bug.type}
+                </span>
+                {bug.type !== 'maintenance' && (
+                    <span className={`rounded px-2 py-0.5 text-xs font-medium ${GRAVITE_COLORS[bug.gravite]}`}>{gravites[bug.gravite]}</span>
+                )}
                 <span className="flex-1 text-sm font-medium text-gray-800">{bug.titre}</span>
                 <select value={bug.statut} onChange={(e) => setStatut(e.target.value)}
                     className="rounded-md border-gray-300 text-xs" title="Changer l’étape (notifie le client)">
@@ -257,6 +291,12 @@ function BugRow({ bug, statutsBug, gravites }) {
                 </select>
                 <button onClick={remove} className="text-gray-300 hover:text-red-500" title="Supprimer">✕</button>
             </div>
+            {bug.type === 'maintenance' && (bug.recurrence || bug.prochaine_echeance) && (
+                <p className="mt-1 text-xs text-sky-700">
+                    {bug.recurrence && `Périodicité : ${bug.recurrence}`}
+                    {bug.prochaine_echeance && ` · prochaine échéance le ${new Date(bug.prochaine_echeance).toLocaleDateString('fr-FR')}`}
+                </p>
+            )}
             {bug.description && <p className="mt-2 whitespace-pre-line text-xs text-gray-600">{bug.description}</p>}
             <div className="mt-2 flex items-center gap-2">
                 <span className="text-xs text-gray-400">Issue Git</span>

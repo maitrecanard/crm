@@ -92,6 +92,8 @@ class ProjectController extends Controller
             'statutsTache' => ProjectTask::STATUTS,
             'statutsBug'   => \App\Models\Bug::STATUTS,
             'gravites'     => \App\Models\Bug::GRAVITES,
+            'typesBug'     => \App\Models\Bug::TYPES,
+            'recurrences'  => \App\Models\Bug::RECURRENCES,
         ]);
     }
 
