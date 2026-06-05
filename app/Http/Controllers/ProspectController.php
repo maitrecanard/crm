@@ -60,9 +60,16 @@ class ProspectController extends Controller
     public function update(Request $request, Prospect $prospect)
     {
         $data = $request->validate([
-            'statut'            => ['required', 'in:'.implode(',', array_keys(Prospect::STATUTS))],
-            'notes'             => ['nullable', 'string'],
-            'prochaine_relance' => ['nullable', 'date'],
+            // Suivi
+            'statut'            => ['sometimes', 'required', 'in:'.implode(',', array_keys(Prospect::STATUTS))],
+            'notes'             => ['sometimes', 'nullable', 'string'],
+            'prochaine_relance' => ['sometimes', 'nullable', 'date'],
+            // Coordonnées (éditables)
+            'entreprise'        => ['sometimes', 'required', 'string', 'max:255'],
+            'email'             => ['sometimes', 'nullable', 'email', 'max:255'],
+            'telephone'         => ['sometimes', 'nullable', 'string', 'max:60'],
+            'localite'          => ['sometimes', 'nullable', 'string', 'max:255'],
+            'secteur'           => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
         $prospect->update($data);

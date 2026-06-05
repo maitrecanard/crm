@@ -12,6 +12,18 @@ export default function Show({ prospect, statuts, typeOptions, vendeur }) {
 
     const inter = useForm({ type: 'appel', note: '', date: '' });
 
+    const infoForm = useForm({
+        entreprise: prospect.entreprise || '',
+        email: prospect.email || '',
+        telephone: prospect.telephone || '',
+        localite: prospect.localite || '',
+        secteur: prospect.secteur || '',
+    });
+    const saveInfo = (e) => {
+        e.preventDefault();
+        infoForm.put(route('prospects.update', prospect.id), { preserveScroll: true });
+    };
+
     const save = (e) => {
         e.preventDefault();
         form.put(route('prospects.update', prospect.id), { preserveScroll: true });
@@ -57,15 +69,31 @@ export default function Show({ prospect, statuts, typeOptions, vendeur }) {
                 {/* Colonne infos */}
                 <div className="md:col-span-2 space-y-6">
                     <div className="rounded-lg bg-white p-6 shadow">
-                        <h3 className="mb-3 font-semibold text-gray-800">Informations</h3>
-                        <dl className="grid grid-cols-2 gap-3 text-sm">
-                            <Info label="Localité" value={prospect.localite} />
-                            <Info label="Secteur" value={prospect.secteur} />
-                            <Info label="Téléphone" value={prospect.telephone || '—'} />
-                            <Info label="Email" value={prospect.email || '—'} />
-                            <Info label="Catégorie" value={prospect.categorie} />
-                            <Info label="Source" value={prospect.source_fichier} />
-                        </dl>
+                        <div className="mb-3 flex items-center justify-between">
+                            <h3 className="font-semibold text-gray-800">Coordonnées</h3>
+                            {infoForm.recentlySuccessful && <span className="text-xs text-green-600">Enregistré ✓</span>}
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 text-sm">
+                            <Field label="Nom / entreprise" full value={infoForm.data.entreprise}
+                                onChange={(v) => infoForm.setData('entreprise', v)} error={infoForm.errors.entreprise} />
+                            <Field label="Email" type="email" value={infoForm.data.email}
+                                onChange={(v) => infoForm.setData('email', v)} error={infoForm.errors.email} />
+                            <Field label="Téléphone" value={infoForm.data.telephone}
+                                onChange={(v) => infoForm.setData('telephone', v)} error={infoForm.errors.telephone} />
+                            <Field label="Localité" value={infoForm.data.localite}
+                                onChange={(v) => infoForm.setData('localite', v)} error={infoForm.errors.localite} />
+                            <Field label="Secteur" value={infoForm.data.secteur}
+                                onChange={(v) => infoForm.setData('secteur', v)} error={infoForm.errors.secteur} />
+                        </div>
+                        <div className="mt-3 flex items-center gap-3">
+                            <button onClick={saveInfo} disabled={infoForm.processing}
+                                className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+                                {infoForm.processing ? 'Enregistrement…' : 'Enregistrer les coordonnées'}
+                            </button>
+                            <span className="text-xs text-gray-400">
+                                Catégorie : {prospect.categorie || '—'} · Source : {prospect.source_fichier}
+                            </span>
+                        </div>
                         {prospect.signal_alerte && (
                             <div className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
                                 <span className="font-semibold">Signal : </span>{prospect.signal_alerte}
@@ -176,6 +204,18 @@ function Info({ label, value }) {
         <div>
             <dt className="text-xs uppercase text-gray-400">{label}</dt>
             <dd className="text-gray-800">{value || '—'}</dd>
+        </div>
+    );
+}
+
+// Champ éditable des coordonnées.
+function Field({ label, value, onChange, error, type = 'text', full = false }) {
+    return (
+        <div className={full ? 'col-span-2' : ''}>
+            <label className="block text-xs uppercase text-gray-400">{label}</label>
+            <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
+                className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+            {error && <p className="mt-1 text-xs text-red-600">{error}</p>}
         </div>
     );
 }
