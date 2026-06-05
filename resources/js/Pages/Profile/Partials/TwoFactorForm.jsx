@@ -59,8 +59,8 @@ export default function TwoFactorForm({ twoFactor, className = '' }) {
                         1. Scanne ce QR code avec ton application, ou saisis la clé manuellement.
                     </p>
                     <div className="flex flex-wrap items-center gap-4">
-                        <div className="rounded border bg-white p-2"
-                            dangerouslySetInnerHTML={{ __html: twoFactor.qr }} />
+                        <img src={twoFactor.qr} alt="QR code 2FA" width="200" height="200"
+                            className="rounded border bg-white p-2" />
                         <div className="text-sm">
                             <div className="text-gray-500">Clé de configuration :</div>
                             <code className="select-all break-all rounded bg-gray-100 px-2 py-1">{twoFactor.secretKey}</code>
