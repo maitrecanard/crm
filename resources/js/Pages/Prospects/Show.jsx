@@ -14,7 +14,7 @@ export default function Show({ prospect, statuts, typeOptions, vendeur }) {
 
     const save = (e) => {
         e.preventDefault();
-        form.patch(route('prospects.update', prospect.id), { preserveScroll: true });
+        form.put(route('prospects.update', prospect.id), { preserveScroll: true });
     };
 
     const addInteraction = (e) => {

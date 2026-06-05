@@ -23,7 +23,7 @@ un **projet séparé** (Laravel + NativePHP, PHP 8.3) qui consomme l'**API du CR
 | GET  | `/api/stats` | KPIs pipeline |
 | GET  | `/api/prospects?q=&statut=&source_fichier=` | liste paginée |
 | GET  | `/api/prospects/{id}` | fiche + interactions + AO |
-| PATCH| `/api/prospects/{id}` | `{statut, notes, prochaine_relance}` |
+| PUT  | `/api/prospects/{id}` | `{statut, notes, prochaine_relance}` |
 | POST | `/api/prospects/{id}/interactions` | `{type, note}` |
 | GET  | `/api/tenders` | appels d'offres |
 | POST | `/api/logout` | révoque le token |
@@ -74,7 +74,7 @@ class CrmApi
     public function stats(): array          { return $this->http()->get($this->base().'/stats')->json(); }
     public function prospects(array $q = []) { return $this->http()->get($this->base().'/prospects', $q)->json(); }
     public function prospect(int $id): array { return $this->http()->get($this->base()."/prospects/$id")->json(); }
-    public function setStatut(int $id, string $s) { return $this->http()->patch($this->base()."/prospects/$id", ['statut' => $s])->json(); }
+    public function setStatut(int $id, string $s) { return $this->http()->put($this->base()."/prospects/$id", ['statut' => $s])->json(); }
     public function tenders(): array        { return $this->http()->get($this->base().'/tenders')->json(); }
 }
 ```

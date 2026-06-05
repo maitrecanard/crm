@@ -6,7 +6,7 @@ export default function Show({ tender, statuts }) {
 
     const save = (e) => {
         e.preventDefault();
-        form.patch(route('ao.update', tender.id), { preserveScroll: true });
+        form.put(route('ao.update', tender.id), { preserveScroll: true });
     };
 
     const j = tender.jours_restants;

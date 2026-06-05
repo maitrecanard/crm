@@ -18,7 +18,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/stats', [ProspectApiController::class, 'stats']);
     Route::get('/prospects', [ProspectApiController::class, 'index']);
     Route::get('/prospects/{prospect}', [ProspectApiController::class, 'show']);
-    Route::patch('/prospects/{prospect}', [ProspectApiController::class, 'updateSuivi']);
+    // PATCH est bloqué par o2switch (LiteSpeed coupe la connexion -> "http2 protocol error"). On utilise PUT.
+    Route::put('/prospects/{prospect}', [ProspectApiController::class, 'updateSuivi']);
     Route::post('/prospects/{prospect}/interactions', [ProspectApiController::class, 'addInteraction']);
     Route::get('/tenders', [TenderApiController::class, 'index']);
     Route::get('/tenders/{tender}', [TenderApiController::class, 'show']);
