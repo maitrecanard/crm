@@ -62,6 +62,9 @@ export default function Show({ prospect, statuts, typeOptions }) {
                     {/* Scénario d'email */}
                     <ScenarioEmail prospect={prospect} />
 
+                    {/* Scénario LinkedIn */}
+                    <ScenarioLinkedIn prospect={prospect} />
+
                     {/* Appels d'offres liés */}
                     {prospect.tenders && prospect.tenders.length > 0 && (
                         <div className="rounded-lg bg-white p-6 shadow">
@@ -322,6 +325,70 @@ function ScenarioEmail({ prospect }) {
                     <div className="mt-1 flex items-start gap-2">
                         <div className="whitespace-pre-line text-gray-600">{relance}</div>
                         <button type="button" onClick={() => navigator.clipboard?.writeText(relance)}
+                            className="shrink-0 text-xs text-indigo-600 underline">Copier</button>
+                    </div>
+                </details>
+            </div>
+        </div>
+    );
+}
+
+function scenarioLinkedIn(prospect) {
+    const e = prospect.entreprise;
+    const d = extraireDecideur(prospect);
+    const bonjour = d ? `Bonjour ${d.split(' ')[0]},` : 'Bonjour,';
+    let note, message;
+    switch (prospect.source_fichier) {
+        case 'clients_tech':
+            note = `${bonjour} je suis le travail de ${e} sur votre produit. Dév freelance (Laravel/React), j’accompagne les éditeurs sur leurs chantiers. Au plaisir d’échanger si le sujet « renfort tech » vous parle un jour.`;
+            message = `Merci pour la connexion ! Je me permets : si ${e} a parfois besoin de renfort dev sur sa roadmap, je serais ravi d’échanger 15 min. Sans engagement bien sûr.`;
+            break;
+        case 'grands_comptes':
+            note = `${bonjour} dév freelance, j’interviens en renfort/régie sur des projets digitaux de structures comme ${e}. Heureux d’entrer en contact.`;
+            message = `Merci pour la connexion ! Si vous faites appel à des prestataires sur vos projets web/applicatifs, je serais ravi de vous présenter mon profil en 15 min.`;
+            break;
+        case 'besoins':
+            note = `${bonjour} j’ai vu la consultation portée par ${e}. Développeur, je peux y répondre — au plaisir d’échanger.`;
+            message = `Merci pour la connexion ! Concernant votre consultation, pourriez-vous m’indiquer si elle est toujours ouverte et où récupérer le DCE ?`;
+            break;
+        default:
+            note = `${bonjour} dév web, j’accompagne les ${prospect.secteur || 'pros'}${prospect.localite ? ' de ' + prospect.localite : ''} sur leur site et leur visibilité. Au plaisir d’échanger.`;
+            message = `Merci pour la connexion ! Si refondre ou créer votre site est un sujet, je propose un point gratuit de 15 min quand vous voulez.`;
+    }
+    return { note, message };
+}
+
+function ScenarioLinkedIn({ prospect }) {
+    const { note, message } = scenarioLinkedIn(prospect);
+    const d = extraireDecideur(prospect);
+    const recherche = `https://www.linkedin.com/search/results/people/?keywords=`
+        + encodeURIComponent(`${d ? d + ' ' : ''}${prospect.entreprise}`);
+
+    return (
+        <div className="rounded-lg bg-white p-6 shadow">
+            <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-800">in Scénario LinkedIn</h3>
+                <a href={recherche} target="_blank" rel="noreferrer"
+                    className="rounded-md bg-[#0a66c2] px-3 py-1 text-sm font-medium text-white">
+                    Chercher sur LinkedIn
+                </a>
+            </div>
+            <div className="space-y-3 text-sm">
+                <div>
+                    <div className="flex items-center justify-between">
+                        <div className="text-xs uppercase text-gray-400">
+                            Note de connexion <span className={note.length > 300 ? 'text-red-600' : 'text-gray-400'}>({note.length}/300)</span>
+                        </div>
+                        <button type="button" onClick={() => navigator.clipboard?.writeText(note)}
+                            className="text-xs text-indigo-600 underline">Copier</button>
+                    </div>
+                    <div className="whitespace-pre-line text-gray-600">{note}</div>
+                </div>
+                <details>
+                    <summary className="cursor-pointer text-xs uppercase text-gray-400">Message après connexion</summary>
+                    <div className="mt-1 flex items-start gap-2">
+                        <div className="whitespace-pre-line text-gray-600">{message}</div>
+                        <button type="button" onClick={() => navigator.clipboard?.writeText(message)}
                             className="shrink-0 text-xs text-indigo-600 underline">Copier</button>
                     </div>
                 </details>
