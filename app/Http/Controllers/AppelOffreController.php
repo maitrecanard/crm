@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tender;
+use App\Services\DossierDoc;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -59,6 +60,20 @@ class AppelOffreController extends Controller
         Artisan::call('crm:import-ao');
 
         return back()->with('success', 'Appels d\'offres rafraîchis depuis BOAMP.');
+    }
+
+    /** Télécharge le dossier de réponse en .doc (ouvrable dans Word). */
+    public function downloadDoc(Tender $tender)
+    {
+        abort_unless(is_array($tender->dossier) && $tender->dossier, 404, 'Aucun dossier rattaché à cet appel d\'offres.');
+
+        $idweb = $tender->idweb ?: (string) $tender->id;
+        $html  = DossierDoc::html($tender->dossier, $idweb);
+
+        return response($html, 200, [
+            'Content-Type'        => 'application/msword; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="dossier-'.$idweb.'.doc"',
+        ]);
     }
 
     /** Met à jour l'état coché de la checklist de dépôt du dossier. */
