@@ -14,6 +14,8 @@ class MaintenanceApiController extends Controller
     /** Applique les migrations en attente puis vide les caches. */
     public function migrate()
     {
+        abort_unless(config('crm.allow_remote_migrate'), 403, 'Migration distante désactivée.');
+
         try {
             Artisan::call('migrate', ['--force' => true]);
             $migrate = trim(Artisan::output());

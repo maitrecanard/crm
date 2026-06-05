@@ -30,8 +30,12 @@ Route::middleware(['auth'])->group(function () {
 
     // --- Clients & projets ---
     Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
+    Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
+    Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
 
     Route::get('/projets', [ProjectController::class, 'index'])->name('projects.index');
+    Route::get('/projets/create', [ProjectController::class, 'create'])->name('projects.create');
+    Route::post('/projets', [ProjectController::class, 'store'])->name('projects.store');
     Route::get('/projets/{project}', [ProjectController::class, 'show'])->name('projects.show');
     Route::put('/projets/{project}', [ProjectController::class, 'update'])->name('projects.update');
     Route::post('/projets/{project}/taches', [ProjectController::class, 'storeTask'])->name('tasks.store');

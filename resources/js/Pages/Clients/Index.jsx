@@ -6,7 +6,15 @@ export default function Index({ clients, filters, total }) {
         { preserveState: true, replace: true });
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Clients</h2>}>
+        <AuthenticatedLayout header={
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-800">Clients</h2>
+                <Link href={route('clients.create')}
+                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                    + Nouveau client
+                </Link>
+            </div>
+        }>
             <Head title="Clients" />
             <div className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6 lg:p-8">
                 <div className="flex items-center justify-between">

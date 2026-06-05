@@ -1,6 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
 
+
+
 const STATUT_COLORS = {
     cadrage: 'bg-sky-100 text-sky-700',
     en_cours: 'bg-amber-100 text-amber-700',
@@ -15,7 +17,15 @@ export default function Index({ projects, filters, statuts, stats }) {
         { preserveState: true, replace: true });
 
     return (
-        <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Projets</h2>}>
+        <AuthenticatedLayout header={
+            <div className="flex items-center justify-between">
+                <h2 className="text-xl font-semibold text-gray-800">Projets</h2>
+                <Link href={route('projects.create')}
+                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700">
+                    + Nouveau projet
+                </Link>
+            </div>
+        }>
             <Head title="Projets" />
             <div className="mx-auto max-w-6xl space-y-4 p-4 sm:p-6 lg:p-8">
                 <div className="flex flex-wrap items-center gap-2">

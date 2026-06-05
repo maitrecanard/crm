@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\ProjectTask;
+use App\Models\Prospect;
+use App\Services\ClientPromotion;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -32,6 +34,47 @@ class ProjectController extends Controller
             'statuts'  => Project::STATUTS,
             'stats'    => Project::selectRaw('statut, count(*) n')->groupBy('statut')->pluck('n', 'statut'),
         ]);
+    }
+
+    public function create(Request $request)
+    {
+        return Inertia::render('Projects/Create', [
+            'clients'   => Prospect::where('est_client', true)
+                ->orderBy('entreprise')->get(['id', 'entreprise']),
+            'statuts'   => Project::STATUTS,
+            'preselect' => (int) $request->input('client') ?: null,
+        ]);
+    }
+
+    /** Création manuelle d'un projet pour un client. */
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'prospect_id'     => ['required', 'exists:prospects,id'],
+            'titre'           => ['required', 'string', 'max:255'],
+            'description'     => ['nullable', 'string'],
+            'statut'          => ['required', 'in:'.implode(',', array_keys(Project::STATUTS))],
+            'budget'          => ['nullable', 'integer', 'min:0'],
+            'date_debut'      => ['nullable', 'date'],
+            'date_fin_prevue' => ['nullable', 'date'],
+        ]);
+
+        // Le prospect rattaché devient client s'il ne l'est pas déjà.
+        $client = Prospect::findOrFail($data['prospect_id']);
+        if (! $client->est_client) {
+            $client->forceFill([
+                'est_client'    => true,
+                'client_depuis' => now()->toDateString(),
+            ])->saveQuietly();
+        }
+
+        $project = Project::create($data + ['date_debut' => $data['date_debut'] ?? now()->toDateString()]);
+
+        foreach (ClientPromotion::standardPhases() as $i => $titre) {
+            $project->tasks()->create(['titre' => $titre, 'ordre' => $i]);
+        }
+
+        return redirect()->route('projects.show', $project)->with('success', 'Projet créé.');
     }
 
     public function show(Project $project)

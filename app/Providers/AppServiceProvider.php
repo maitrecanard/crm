@@ -6,8 +6,10 @@ use App\Models\Prospect;
 use App\Observers\ProspectObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -25,6 +27,14 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        // En production : toutes les URLs générées en HTTPS (cookies sécurisés, liens mail).
+        if ($this->app->isProduction()) {
+            URL::forceScheme('https');
+        }
+
+        // Politique de mot de passe forte (inscription + réinitialisation).
+        Password::defaults(fn () => Password::min(12)->mixedCase()->numbers()->symbols()->uncompromised());
 
         // Prospect « Gagné » -> client + projet auto.
         Prospect::observe(ProspectObserver::class);

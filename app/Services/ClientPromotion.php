@@ -13,6 +13,12 @@ use Illuminate\Support\Str;
  */
 class ClientPromotion
 {
+    /** Phases standard d'un projet (réutilisé pour la création manuelle). */
+    public static function standardPhases(): array
+    {
+        return self::PHASES;
+    }
+
     /** Phases par défaut si on n'a pas de DPGF pour pré-remplir le plan. */
     private const PHASES = [
         'Cadrage & lancement',

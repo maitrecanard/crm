@@ -13,12 +13,17 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Derrière le reverse-proxy o2switch/LiteSpeed : on fait confiance aux
+        // en-têtes X-Forwarded-* pour détecter HTTPS (cookies sécurisés, scheme).
+        $middleware->trustProxies(at: '*');
+
+        // En-têtes de sécurité sur toutes les réponses.
+        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
-
-        //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
