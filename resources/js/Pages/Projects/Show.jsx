@@ -9,7 +9,7 @@ const TACHE_COLORS = {
 };
 const NEXT = { a_faire: 'en_cours', en_cours: 'fait', fait: 'a_faire' };
 
-export default function Show({ project, statuts, statutsTache }) {
+export default function Show({ project, statuts, statutsTache, statutsBug, gravites }) {
     const form = useForm({
         titre: project.titre,
         description: project.description || '',
@@ -103,6 +103,8 @@ export default function Show({ project, statuts, statutsTache }) {
                         <textarea rows="5" value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)}
                             className="w-full rounded-md border-gray-300 text-sm" />
                     </div>
+
+                    <BugsCard project={project} statutsBug={statutsBug} gravites={gravites} />
                 </div>
 
                 {/* Colonne droite : pilotage */}
@@ -168,5 +170,105 @@ export default function Show({ project, statuts, statutsTache }) {
                 </div>
             </div>
         </AuthenticatedLayout>
+    );
+}
+
+const GRAVITE_COLORS = {
+    mineur: 'bg-gray-100 text-gray-600',
+    majeur: 'bg-amber-100 text-amber-700',
+    bloquant: 'bg-red-100 text-red-700',
+};
+
+// Suivi de production : bugs déclarés par le client + notification e-mail à chaque étape.
+function BugsCard({ project, statutsBug, gravites }) {
+    const bugs = project.bugs || [];
+    const clientEmail = project.prospect?.email;
+    const add = useForm({ titre: '', description: '', gravite: 'majeur', issue_git: '' });
+    const submit = (e) => {
+        e.preventDefault();
+        add.post(route('bugs.store', project.id), { preserveScroll: true, onSuccess: () => add.reset() });
+    };
+
+    return (
+        <div className="rounded-lg bg-white p-6 shadow">
+            <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-800">🐛 Suivi de production</h3>
+                <span className="text-xs text-gray-400">{bugs.length} ticket{bugs.length > 1 ? 's' : ''}</span>
+            </div>
+
+            {!clientEmail && (
+                <p className="mb-3 rounded bg-amber-50 p-2 text-xs text-amber-800">
+                    ⚠️ Ce client n’a pas d’adresse e-mail : les notifications ne pourront pas partir. Ajoute-la sur sa fiche.
+                </p>
+            )}
+
+            <ul className="space-y-3">
+                {bugs.map((b) => <BugRow key={b.id} bug={b} statutsBug={statutsBug} gravites={gravites} />)}
+                {!bugs.length && <li className="text-sm text-gray-400">Aucun bug signalé.</li>}
+            </ul>
+
+            <form onSubmit={submit} className="mt-4 space-y-2 border-t border-gray-100 pt-4">
+                <div className="flex gap-2">
+                    <input value={add.data.titre} onChange={(e) => add.setData('titre', e.target.value)}
+                        placeholder="Bug signalé par le client…" className="flex-1 rounded-md border-gray-300 text-sm" />
+                    <select value={add.data.gravite} onChange={(e) => add.setData('gravite', e.target.value)}
+                        className="rounded-md border-gray-300 text-sm">
+                        {Object.entries(gravites).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                    </select>
+                </div>
+                <textarea rows="2" value={add.data.description} onChange={(e) => add.setData('description', e.target.value)}
+                    placeholder="Description (reprise dans l’e-mail envoyé au client)…" className="w-full rounded-md border-gray-300 text-sm" />
+                <input value={add.data.issue_git} onChange={(e) => add.setData('issue_git', e.target.value)}
+                    placeholder="Issue Git (URL ou réf. — interne)…" className="w-full rounded-md border-gray-300 text-sm" />
+                <div className="flex justify-end">
+                    <button disabled={add.processing || !add.data.titre}
+                        className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">
+                        Enregistrer + accusé de réception
+                    </button>
+                </div>
+            </form>
+        </div>
+    );
+}
+
+function BugRow({ bug, statutsBug, gravites }) {
+    const [issue, setIssue] = useState(bug.issue_git || '');
+    const setStatut = (statut) => router.put(route('bugs.update', bug.id), { statut },
+        { preserveScroll: true, preserveState: true });
+    const saveIssue = () => {
+        if (issue !== (bug.issue_git || '')) {
+            router.put(route('bugs.update', bug.id), { issue_git: issue }, { preserveScroll: true, preserveState: true });
+        }
+    };
+    const remove = () => {
+        if (confirm('Supprimer ce bug ?')) {
+            router.delete(route('bugs.destroy', bug.id), { preserveScroll: true, preserveState: true });
+        }
+    };
+
+    return (
+        <li className="rounded-md border border-gray-200 p-3">
+            <div className="flex items-center gap-2">
+                <span className={`rounded px-2 py-0.5 text-xs font-medium ${GRAVITE_COLORS[bug.gravite]}`}>{gravites[bug.gravite]}</span>
+                <span className="flex-1 text-sm font-medium text-gray-800">{bug.titre}</span>
+                <select value={bug.statut} onChange={(e) => setStatut(e.target.value)}
+                    className="rounded-md border-gray-300 text-xs" title="Changer l’étape (notifie le client)">
+                    {Object.entries(statutsBug).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+                <button onClick={remove} className="text-gray-300 hover:text-red-500" title="Supprimer">✕</button>
+            </div>
+            {bug.description && <p className="mt-2 whitespace-pre-line text-xs text-gray-600">{bug.description}</p>}
+            <div className="mt-2 flex items-center gap-2">
+                <span className="text-xs text-gray-400">Issue Git</span>
+                <input value={issue} onChange={(e) => setIssue(e.target.value)} onBlur={saveIssue}
+                    placeholder="URL ou réf." className="flex-1 rounded-md border-gray-200 text-xs" />
+                {bug.issue_git && /^https?:\/\//.test(bug.issue_git) && (
+                    <a href={bug.issue_git} target="_blank" rel="noreferrer" className="text-xs text-indigo-600 hover:underline">ouvrir ↗</a>
+                )}
+            </div>
+            <p className="mt-1 text-[11px] text-gray-400">
+                {bug.notifie_le ? `Client notifié le ${new Date(bug.notifie_le).toLocaleString('fr-FR')}` : 'Pas encore notifié'}
+            </p>
+        </li>
     );
 }

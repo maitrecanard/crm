@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AppelOffreController;
+use App\Http\Controllers\BugController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InteractionController;
@@ -41,6 +42,11 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class])->group(
     Route::post('/projets/{project}/taches', [ProjectController::class, 'storeTask'])->name('tasks.store');
     Route::put('/taches/{task}', [ProjectController::class, 'updateTask'])->name('tasks.update');
     Route::delete('/taches/{task}', [ProjectController::class, 'destroyTask'])->name('tasks.destroy');
+
+    // Suivi de production : bugs déclarés par le client.
+    Route::post('/projets/{project}/bugs', [BugController::class, 'store'])->name('bugs.store');
+    Route::put('/bugs/{bug}', [BugController::class, 'update'])->name('bugs.update');
+    Route::delete('/bugs/{bug}', [BugController::class, 'destroy'])->name('bugs.destroy');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

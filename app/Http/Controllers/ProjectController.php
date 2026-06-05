@@ -83,12 +83,15 @@ class ProjectController extends Controller
             'prospect:id,entreprise,localite,telephone,email',
             'tender:id,idweb,objet',
             'tasks',
+            'bugs',
         ]);
 
         return Inertia::render('Projects/Show', [
             'project'      => $project,
             'statuts'      => Project::STATUTS,
             'statutsTache' => ProjectTask::STATUTS,
+            'statutsBug'   => \App\Models\Bug::STATUTS,
+            'gravites'     => \App\Models\Bug::GRAVITES,
         ]);
     }
 

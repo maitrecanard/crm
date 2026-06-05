@@ -47,6 +47,11 @@ class Project extends Model
         return $this->hasMany(ProjectTask::class)->orderBy('ordre')->orderBy('id');
     }
 
+    public function bugs(): HasMany
+    {
+        return $this->hasMany(Bug::class)->latest();
+    }
+
     /** % de tâches terminées (0-100). */
     public function getAvancementAttribute(): int
     {

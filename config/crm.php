@@ -12,6 +12,15 @@ return [
     ],
 
     /*
+    | Expéditeur des e-mails de SUPPORT (suivi des bugs côté client) — distinct
+    | de l'identité CRM. Le from utilise une adresse valide de ton domaine.
+    */
+    'support' => [
+        'email' => env('CRM_SUPPORT_EMAIL', env('MAIL_FROM_ADDRESS', 'support@techcaresolutions.fr')),
+        'name'  => env('CRM_SUPPORT_NAME', 'Support TechCare Solutions'),
+    ],
+
+    /*
     | Sécurité
     | - allow_registration : inscription publique (/register). FAUX par défaut :
     |   un CRM privé ne doit pas laisser n'importe qui créer un compte.
