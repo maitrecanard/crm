@@ -18,6 +18,8 @@ return [
     'support' => [
         'email' => env('CRM_SUPPORT_EMAIL', env('MAIL_FROM_ADDRESS', 'support@techcaresolutions.fr')),
         'name'  => env('CRM_SUPPORT_NAME', 'Support TechCare Solutions'),
+        // Copie cachée (BCC) reçue à chaque e-mail de ticket. Vide = pas de copie.
+        'copy'  => env('CRM_SUPPORT_COPY', env('CRM_SUPPORT_EMAIL', env('MAIL_FROM_ADDRESS'))),
     ],
 
     /*
