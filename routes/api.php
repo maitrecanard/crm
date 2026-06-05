@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthApiController;
+use App\Http\Controllers\Api\MaintenanceApiController;
 use App\Http\Controllers\Api\ProspectApiController;
 use App\Http\Controllers\Api\TenderApiController;
 use Illuminate\Http\Request;
@@ -29,4 +30,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/prospects/bulk', [ProspectApiController::class, 'bulk']);
     Route::post('/tenders/bulk', [TenderApiController::class, 'bulk']);
     Route::post('/tenders/dossier', [TenderApiController::class, 'attachDossier']);
+
+    // --- Maintenance à distance (migrations) déclenchable par le SDK ---
+    Route::get('/maintenance/migrate-status', [MaintenanceApiController::class, 'status']);
+    Route::post('/maintenance/migrate', [MaintenanceApiController::class, 'migrate']);
 });
