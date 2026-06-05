@@ -68,4 +68,23 @@ class ProspectController extends Controller
 
         return back()->with('success', 'Prospect mis à jour.');
     }
+
+    /** Enregistre (ou réinitialise) un scénario personnalisé pour ce prospect. */
+    public function saveScenario(Request $request, Prospect $prospect)
+    {
+        $data = $request->validate([
+            'key'   => ['required', 'in:appel,email,linkedin'],
+            'value' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $scenarios = $prospect->scenarios ?? [];
+        if (blank($data['value'])) {
+            unset($scenarios[$data['key']]);   // réinitialisation -> retour au modèle généré
+        } else {
+            $scenarios[$data['key']] = $data['value'];
+        }
+        $prospect->update(['scenarios' => $scenarios ?: null]);
+
+        return back(fallback: route('prospects.show', $prospect));
+    }
 }

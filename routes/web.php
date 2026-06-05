@@ -15,6 +15,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/prospects', [ProspectController::class, 'index'])->name('prospects.index');
     Route::get('/prospects/{prospect}', [ProspectController::class, 'show'])->name('prospects.show');
     Route::patch('/prospects/{prospect}', [ProspectController::class, 'update'])->name('prospects.update');
+    Route::put('/prospects/{prospect}/scenarios', [ProspectController::class, 'saveScenario'])->name('prospects.scenarios');
     Route::post('/prospects/{prospect}/interactions', [InteractionController::class, 'store'])->name('interactions.store');
 
     Route::get('/appels-offres', [AppelOffreController::class, 'index'])->name('ao.index');

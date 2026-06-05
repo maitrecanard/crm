@@ -10,11 +10,12 @@ class Prospect extends Model
     protected $fillable = [
         'cle', 'entreprise', 'localite', 'telephone', 'email', 'categorie',
         'secteur', 'signal_alerte', 'source_url', 'requete', 'source_fichier',
-        'statut', 'prochaine_relance', 'notes',
+        'statut', 'prochaine_relance', 'notes', 'scenarios',
     ];
 
     protected $casts = [
         'prochaine_relance' => 'date',
+        'scenarios' => 'array',
     ];
 
     /** Étapes du pipeline commercial. */

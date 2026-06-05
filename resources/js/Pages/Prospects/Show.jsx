@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, Link, router, useForm } from '@inertiajs/react';
+import { useState } from 'react';
 
 export default function Show({ prospect, statuts, typeOptions }) {
     const form = useForm({
@@ -195,62 +196,79 @@ function valueProp(prospect) {
     }
 }
 
-function ScenarioAppel({ prospect }) {
-    const v = valueProp(prospect);
-    const qui = extraireDecideur(prospect);
-    const demande = qui ? `${qui}` : 'le responsable';
+// Carte de scénario éditable et enregistrable (commune aux 3 canaux).
+function ScenarioEditable({ prospect, slug, titre, defaut, actions, hint }) {
+    const saved = prospect.scenarios?.[slug] ?? null;
+    const [text, setText] = useState(saved ?? defaut);
+    const [busy, setBusy] = useState(false);
+    const dirty = text !== (saved ?? defaut);
 
-    const scenario = [
-        ['1. Accroche (0-20 s)',
-            `« Bonjour, je souhaiterais parler à ${demande}. … ` +
-            `[TON PRÉNOM] de TechCare Solutions, vous avez 30 secondes ? »`],
-        ['2. Raison de l’appel',
-            `« Je me permets de vous appeler car ${v.raison}. Côté TechCare, ${v.pitch}. »`],
-        ['3. Question d’accroche',
-            `« ${v.question} »  → on laisse parler, on écoute le besoin.`],
-        ['4. Décrocher un échange',
-            '« Le mieux, c’est qu’on prenne 15 min pour voir si je peux vous être utile concrètement. ' +
-            'Vous préférez plutôt mardi ou jeudi en fin de journée ? »'],
-        ['5. Réponses aux objections',
-            '• « Pas le temps » → « Justement, 15 min suffisent, je m’adapte à votre agenda. »\n' +
-            '• « On a déjà une équipe/un prestataire » → « Parfait, je viens en renfort sur les pics ou les sujets pointus, pas en remplacement. »\n' +
-            '• « Envoyez un mail » → « Avec plaisir — je vous envoie 3 lignes + 2 références ; je vous rappelle jeudi pour votre avis ? »\n' +
-            '• « Pas de budget » → « Compris. On échange quand même 15 min pour que je sois en tête le moment venu ? »'],
-        ['6. Clôture',
-            'Reformuler le prochain pas (RDV, mail, rappel), remercier. → puis logguer l’appel dans l’historique ci-dessous.'],
-    ];
-
-    const texte = `Scénario d'appel — ${prospect.entreprise}\n` +
-        (prospect.telephone ? `Tél : ${prospect.telephone}\n` : '') + '\n' +
-        scenario.map(([t, c]) => `${t}\n${c}`).join('\n\n');
+    const persist = (value) => {
+        setBusy(true);
+        router.put(route('prospects.scenarios', prospect.id), { key: slug, value }, {
+            preserveScroll: true,
+            preserveState: true,
+            onFinish: () => setBusy(false),
+        });
+    };
 
     return (
         <div className="rounded-lg bg-white p-6 shadow">
-            <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800">📞 Scénario d’appel</h3>
+            <div className="mb-3 flex items-center justify-between gap-2">
+                <h3 className="font-semibold text-gray-800">
+                    {titre}
+                    {saved != null && <span className="ml-2 text-xs font-normal text-green-600">(personnalisé)</span>}
+                </h3>
                 <div className="flex items-center gap-3">
-                    {prospect.telephone && (
-                        <a href={`tel:${prospect.telephone.replace(/\s/g, '')}`}
-                            className="rounded-md bg-green-600 px-3 py-1 text-sm font-medium text-white">
-                            Appeler {prospect.telephone}
-                        </a>
-                    )}
-                    <button type="button" onClick={() => navigator.clipboard?.writeText(texte)}
+                    {actions?.(text)}
+                    <button type="button" onClick={() => navigator.clipboard?.writeText(text)}
                         className="text-sm text-indigo-600 underline">Copier</button>
                 </div>
             </div>
-            {!prospect.telephone && (
-                <p className="mb-3 text-xs text-amber-600">Aucun numéro renseigné — à compléter avant l’appel.</p>
-            )}
-            <ol className="space-y-3">
-                {scenario.map(([titre, contenu]) => (
-                    <li key={titre}>
-                        <div className="text-sm font-medium text-gray-700">{titre}</div>
-                        <div className="whitespace-pre-line text-sm text-gray-600">{contenu}</div>
-                    </li>
-                ))}
-            </ol>
+            {hint}
+            <textarea value={text} onChange={(e) => setText(e.target.value)}
+                rows={Math.min(20, Math.max(6, text.split('\n').length + 1))}
+                className="w-full rounded-md border-gray-300 font-mono text-xs leading-relaxed text-gray-700" />
+            <div className="mt-2 flex items-center gap-3">
+                <button type="button" onClick={() => persist(text)} disabled={!dirty || busy}
+                    className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-40">
+                    Enregistrer
+                </button>
+                <button type="button" onClick={() => { setText(defaut); persist(null); }} disabled={busy}
+                    className="text-sm text-gray-500 underline">Réinitialiser au modèle</button>
+            </div>
         </div>
+    );
+}
+
+function defautAppel(prospect) {
+    const v = valueProp(prospect);
+    const qui = extraireDecideur(prospect) || 'le responsable';
+    return [
+        `1. Accroche — « Bonjour, je souhaiterais parler à ${qui}. [TON PRÉNOM] de TechCare Solutions, vous avez 30 secondes ? »`,
+        `2. Raison — « Je me permets de vous appeler car ${v.raison}. Côté TechCare, ${v.pitch}. »`,
+        `3. Question — « ${v.question} »  (laisser parler, écouter le besoin)`,
+        `4. RDV — « Le mieux, c’est qu’on prenne 15 min. Plutôt mardi ou jeudi en fin de journée ? »`,
+        `5. Objections —\n   • Pas le temps → « 15 min suffisent, je m’adapte à votre agenda. »\n   • Déjà un prestataire → « Je viens en renfort, pas en remplacement. »\n   • Envoyez un mail → « Avec plaisir, et je vous rappelle jeudi ? »\n   • Pas de budget → « On échange 15 min pour le moment venu ? »`,
+        `6. Clôture — reformuler le prochain pas, remercier, puis logguer l’appel.`,
+    ].join('\n\n');
+}
+
+function ScenarioAppel({ prospect }) {
+    return (
+        <ScenarioEditable
+            prospect={prospect} slug="appel" titre="📞 Scénario d’appel"
+            defaut={defautAppel(prospect)}
+            actions={(text) => prospect.telephone && (
+                <a href={`tel:${prospect.telephone.replace(/\s/g, '')}`}
+                    className="rounded-md bg-green-600 px-3 py-1 text-sm font-medium text-white">
+                    Appeler
+                </a>
+            )}
+            hint={!prospect.telephone && (
+                <p className="mb-2 text-xs text-amber-600">Aucun numéro renseigné — à compléter avant l’appel.</p>
+            )}
+        />
     );
 }
 
@@ -287,49 +305,40 @@ function scenarioEmail(prospect) {
     return { objet, corps, relance };
 }
 
-function ScenarioEmail({ prospect }) {
-    const { objet, corps, relance } = scenarioEmail(prospect);
-    const mailto = prospect.email
-        ? `mailto:${prospect.email}?subject=${encodeURIComponent(objet)}&body=${encodeURIComponent(corps)}`
-        : null;
+function defautEmail(prospect) {
+    const { objet, corps } = scenarioEmail(prospect);
+    return `Objet : ${objet}\n\n${corps}`;
+}
 
+function mailtoDepuisTexte(prospect, text) {
+    if (!prospect.email) return null;
+    const lines = text.split('\n');
+    let subject = '';
+    let body = text;
+    if (/^\s*objet\s*:/i.test(lines[0])) {
+        subject = lines[0].replace(/^\s*objet\s*:\s*/i, '');
+        body = lines.slice(1).join('\n').replace(/^\n+/, '');
+    }
+    return `mailto:${prospect.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
+function ScenarioEmail({ prospect }) {
     return (
-        <div className="rounded-lg bg-white p-6 shadow">
-            <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800">✉️ Scénario d’email</h3>
-                <div className="flex items-center gap-3">
-                    {mailto && (
-                        <a href={mailto}
-                            className="rounded-md bg-indigo-600 px-3 py-1 text-sm font-medium text-white">
-                            Écrire l’email
-                        </a>
-                    )}
-                    <button type="button" onClick={() => navigator.clipboard?.writeText(`Objet : ${objet}\n\n${corps}`)}
-                        className="text-sm text-indigo-600 underline">Copier</button>
-                </div>
-            </div>
-            {!prospect.email && (
-                <p className="mb-3 text-xs text-amber-600">Aucun email renseigné — à trouver (site /contact, LinkedIn).</p>
+        <ScenarioEditable
+            prospect={prospect} slug="email" titre="✉️ Scénario d’email"
+            defaut={defautEmail(prospect)}
+            actions={(text) => {
+                const m = mailtoDepuisTexte(prospect, text);
+                return m && (
+                    <a href={m} className="rounded-md bg-indigo-600 px-3 py-1 text-sm font-medium text-white">
+                        Écrire
+                    </a>
+                );
+            }}
+            hint={!prospect.email && (
+                <p className="mb-2 text-xs text-amber-600">Aucun email — à trouver (site /contact, LinkedIn).</p>
             )}
-            <div className="space-y-3 text-sm">
-                <div>
-                    <div className="text-xs uppercase text-gray-400">Objet</div>
-                    <div className="font-medium text-gray-800">{objet}</div>
-                </div>
-                <div>
-                    <div className="text-xs uppercase text-gray-400">Corps</div>
-                    <div className="whitespace-pre-line text-gray-600">{corps}</div>
-                </div>
-                <details>
-                    <summary className="cursor-pointer text-xs uppercase text-gray-400">Relance (J+5)</summary>
-                    <div className="mt-1 flex items-start gap-2">
-                        <div className="whitespace-pre-line text-gray-600">{relance}</div>
-                        <button type="button" onClick={() => navigator.clipboard?.writeText(relance)}
-                            className="shrink-0 text-xs text-indigo-600 underline">Copier</button>
-                    </div>
-                </details>
-            </div>
-        </div>
+        />
     );
 }
 
@@ -358,41 +367,27 @@ function scenarioLinkedIn(prospect) {
     return { note, message };
 }
 
-function ScenarioLinkedIn({ prospect }) {
+function defautLinkedIn(prospect) {
     const { note, message } = scenarioLinkedIn(prospect);
+    return `Note de connexion (≤ 300 car.) :\n${note}\n\nMessage après connexion :\n${message}`;
+}
+
+function ScenarioLinkedIn({ prospect }) {
     const d = extraireDecideur(prospect);
-    const recherche = `https://www.linkedin.com/search/results/people/?keywords=`
+    const recherche = 'https://www.linkedin.com/search/results/people/?keywords='
         + encodeURIComponent(`${d ? d + ' ' : ''}${prospect.entreprise}`);
 
     return (
-        <div className="rounded-lg bg-white p-6 shadow">
-            <div className="mb-3 flex items-center justify-between">
-                <h3 className="font-semibold text-gray-800">in Scénario LinkedIn</h3>
+        <ScenarioEditable
+            prospect={prospect} slug="linkedin" titre="in Scénario LinkedIn"
+            defaut={defautLinkedIn(prospect)}
+            actions={() => (
                 <a href={recherche} target="_blank" rel="noreferrer"
                     className="rounded-md bg-[#0a66c2] px-3 py-1 text-sm font-medium text-white">
-                    Chercher sur LinkedIn
+                    Chercher
                 </a>
-            </div>
-            <div className="space-y-3 text-sm">
-                <div>
-                    <div className="flex items-center justify-between">
-                        <div className="text-xs uppercase text-gray-400">
-                            Note de connexion <span className={note.length > 300 ? 'text-red-600' : 'text-gray-400'}>({note.length}/300)</span>
-                        </div>
-                        <button type="button" onClick={() => navigator.clipboard?.writeText(note)}
-                            className="text-xs text-indigo-600 underline">Copier</button>
-                    </div>
-                    <div className="whitespace-pre-line text-gray-600">{note}</div>
-                </div>
-                <details>
-                    <summary className="cursor-pointer text-xs uppercase text-gray-400">Message après connexion</summary>
-                    <div className="mt-1 flex items-start gap-2">
-                        <div className="whitespace-pre-line text-gray-600">{message}</div>
-                        <button type="button" onClick={() => navigator.clipboard?.writeText(message)}
-                            className="shrink-0 text-xs text-indigo-600 underline">Copier</button>
-                    </div>
-                </details>
-            </div>
-        </div>
+            )}
+            hint={<p className="mb-2 text-xs text-gray-400">Rappel : la note de connexion est limitée à 300 caractères.</p>}
+        />
     );
 }
