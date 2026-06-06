@@ -11,9 +11,10 @@ class ProspectController extends Controller
 {
     public function index(Request $request)
     {
-        $filters = $request->only(['q', 'statut', 'source_fichier', 'secteur', 'localite']);
+        $filters = $request->only(['q', 'statut', 'source_fichier', 'secteur', 'localite', 'has_email']);
 
         $query = Prospect::query()
+            ->when($filters['has_email'] ?? null, fn ($q) => $q->whereNotNull('email')->where('email', '<>', ''))
             ->when($filters['q'] ?? null, fn ($q, $v) => $q->where(fn ($w) =>
                 $w->where('entreprise', 'like', "%{$v}%")
                   ->orWhere('localite', 'like', "%{$v}%")

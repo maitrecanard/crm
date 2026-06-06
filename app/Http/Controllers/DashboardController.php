@@ -34,6 +34,13 @@ class DashboardController extends Controller
                 'gagne'       => $prospectStats['gagne'] ?? 0,
                 'ao_ouverts'  => Tender::whereIn('statut', $aoOuverts)->count(),
             ],
+            'aContacterEmail' => Prospect::where('statut', 'a_contacter')
+                ->whereNotNull('email')->where('email', '<>', '')
+                ->orderBy('entreprise')
+                ->limit(20)
+                ->get(['id', 'entreprise', 'localite', 'secteur', 'email']),
+            'avecEmailTotal' => Prospect::where('statut', 'a_contacter')
+                ->whereNotNull('email')->where('email', '<>', '')->count(),
             'relances' => Prospect::whereNotNull('prochaine_relance')
                 ->whereNotIn('statut', ['gagne', 'perdu'])
                 ->whereDate('prochaine_relance', '<=', now()->addDays(7))

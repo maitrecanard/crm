@@ -23,7 +23,7 @@ function jdiff(dateStr) {
     return Math.round((d - t) / 86400000);
 }
 
-export default function Dashboard({ statutsProspect, prospectStats, kpis, relances, aoUrgents }) {
+export default function Dashboard({ statutsProspect, prospectStats, kpis, relances, aoUrgents, aContacterEmail = [], avecEmailTotal = 0 }) {
     const pipeOrder = ['a_contacter', 'contacte', 'relance', 'rdv', 'gagne', 'perdu'];
     const maxPipe = Math.max(1, ...pipeOrder.map((k) => prospectStats[k] || 0));
 
@@ -113,6 +113,34 @@ export default function Dashboard({ statutsProspect, prospectStats, kpis, relanc
                             })}
                         </ul>
                     </div>
+                </div>
+
+                {/* À contacter — email disponible (action rapide) */}
+                <div className="rounded-lg bg-white p-6 shadow">
+                    <div className="mb-4 flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-800">
+                            📧 À contacter — email disponible
+                            <span className="ml-2 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">{avecEmailTotal}</span>
+                        </h3>
+                        <Link href={route('prospects.index', { statut: 'a_contacter', has_email: 1 })}
+                            className="text-sm text-indigo-600 hover:underline">Voir tous →</Link>
+                    </div>
+                    {aContacterEmail.length === 0 ? (
+                        <p className="text-sm text-gray-400">Aucun prospect à contacter avec un email pour l’instant.</p>
+                    ) : (
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            {aContacterEmail.map((p) => (
+                                <Link key={p.id} href={route('prospects.show', p.id)}
+                                    className="rounded-md border border-gray-100 p-3 hover:border-indigo-200 hover:bg-indigo-50/40">
+                                    <div className="truncate text-sm font-medium text-gray-800">{p.entreprise}</div>
+                                    <div className="truncate text-xs text-indigo-600">{p.email}</div>
+                                    <div className="truncate text-xs text-gray-400">
+                                        {[p.secteur, p.localite].filter(Boolean).join(' · ') || '—'}
+                                    </div>
+                                </Link>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
         </AuthenticatedLayout>

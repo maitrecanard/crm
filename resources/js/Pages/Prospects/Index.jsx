@@ -71,7 +71,11 @@ export default function Index({ prospects, filters, statuts, stats, sources, sec
                         <option value="">Tous secteurs</option>
                         {secteurs.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
-                    {(filters.q || filters.source_fichier || filters.secteur || filters.localite) && (
+                    <button onClick={() => apply({ has_email: filters.has_email ? null : 1 })}
+                        className={`rounded-md border px-3 py-2 text-sm ${filters.has_email ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'bg-white text-gray-600'}`}>
+                        📧 Avec email
+                    </button>
+                    {(filters.q || filters.source_fichier || filters.secteur || filters.localite || filters.has_email) && (
                         <button onClick={() => { setQ(''); router.get(route('prospects.index')); }}
                             className="text-sm text-gray-500 underline">Réinitialiser</button>
                     )}
