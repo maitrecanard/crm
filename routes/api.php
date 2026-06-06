@@ -35,4 +35,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/maintenance/migrate-status', [MaintenanceApiController::class, 'status']);
     Route::post('/maintenance/migrate', [MaintenanceApiController::class, 'migrate']);
     Route::post('/maintenance/rotate-token', [MaintenanceApiController::class, 'rotateToken']);
+    Route::post('/maintenance/test-mail', [MaintenanceApiController::class, 'testMail']);
 });
