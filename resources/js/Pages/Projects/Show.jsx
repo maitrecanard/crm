@@ -9,7 +9,18 @@ const TACHE_COLORS = {
 };
 const NEXT = { a_faire: 'en_cours', en_cours: 'fait', fait: 'a_faire' };
 
+const PROJET_STATUT_COLORS = {
+    cadrage: 'bg-sky-100 text-sky-700',
+    en_cours: 'bg-amber-100 text-amber-700',
+    recette: 'bg-violet-100 text-violet-700',
+    livre: 'bg-green-100 text-green-700',
+    cloture: 'bg-gray-100 text-gray-500',
+    suspendu: 'bg-red-100 text-red-700',
+};
+
 export default function Show({ project, statuts, statutsTache, statutsBug, gravites, typesBug, recurrences }) {
+    const [tab, setTab] = useState('overview');
+
     const form = useForm({
         titre: project.titre,
         description: project.description || '',
@@ -29,13 +40,18 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
     const tasks = project.tasks || [];
     const faites = tasks.filter((t) => t.statut === 'fait').length;
     const avancement = tasks.length ? Math.round((faites / tasks.length) * 100) : 0;
+    const tCount = { a_faire: 0, en_cours: 0, fait: 0 };
+    tasks.forEach((t) => { tCount[t.statut] = (tCount[t.statut] || 0) + 1; });
+
+    const bugs = project.bugs || [];
+    const bugsOuverts = bugs.filter((b) => !['livre', 'ferme'].includes(b.statut));
+    const byType = {};
+    bugs.forEach((b) => { byType[b.type] = (byType[b.type] || 0) + 1; });
 
     const newTask = useForm({ titre: '', echeance: '' });
     const addTask = (e) => {
         e.preventDefault();
-        newTask.post(route('tasks.store', project.id), {
-            preserveScroll: true, onSuccess: () => newTask.reset(),
-        });
+        newTask.post(route('tasks.store', project.id), { preserveScroll: true, onSuccess: () => newTask.reset() });
     };
     const cycle = (t) => router.put(route('tasks.update', t.id), { statut: NEXT[t.statut] },
         { preserveScroll: true, preserveState: true });
@@ -45,19 +61,192 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
         }
     };
 
+    const TABS = [
+        { id: 'overview', label: "Vue d'ensemble" },
+        { id: 'pilotage', label: 'Pilotage' },
+        { id: 'taches', label: 'Tâches', badge: tasks.length },
+        { id: 'env', label: 'Environnements' },
+        { id: 'prod', label: 'Production', badge: bugs.length },
+    ];
+
     return (
         <AuthenticatedLayout header={
             <div className="flex items-center gap-3">
                 <Link href={route('projects.index')} className="text-gray-400 hover:text-gray-600">← Projets</Link>
                 <h2 className="truncate text-xl font-semibold text-gray-800">{project.titre}</h2>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PROJET_STATUT_COLORS[project.statut] || 'bg-gray-100'}`}>
+                    {statuts[project.statut]}
+                </span>
             </div>
         }>
             <Head title={project.titre} />
 
-            <div className="mx-auto grid max-w-5xl gap-6 p-4 sm:p-6 lg:p-8 md:grid-cols-3">
-                {/* Colonne gauche : gestion des tâches */}
-                <div className="space-y-6 md:col-span-2">
-                    <div className="rounded-lg bg-white p-6 shadow">
+            <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+                {/* Onglets */}
+                <div className="flex gap-1 overflow-x-auto border-b border-gray-200">
+                    {TABS.map((t) => (
+                        <button key={t.id} onClick={() => setTab(t.id)}
+                            className={`-mb-px whitespace-nowrap border-b-2 px-4 py-3 text-sm font-medium ${
+                                tab === t.id ? 'border-indigo-600 text-indigo-600'
+                                    : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+                            {t.label}
+                            {t.badge != null && (
+                                <span className="ml-1.5 rounded-full bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">{t.badge}</span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
+                {/* ---------- VUE D'ENSEMBLE ---------- */}
+                {tab === 'overview' && (
+                    <div className="space-y-6">
+                        <div className="grid gap-4 sm:grid-cols-4">
+                            <KpiCard label="Avancement">
+                                <Donut value={avancement} />
+                            </KpiCard>
+                            <KpiCard label="Budget">
+                                <p className="text-2xl font-bold text-gray-800">
+                                    {project.budget ? `${project.budget.toLocaleString('fr-FR')} €` : '—'}
+                                </p>
+                                <p className="text-xs text-gray-400">HT</p>
+                            </KpiCard>
+                            <KpiCard label="Tâches">
+                                <p className="text-2xl font-bold text-gray-800">{faites}<span className="text-base text-gray-400">/{tasks.length}</span></p>
+                                <p className="text-xs text-gray-400">terminées</p>
+                            </KpiCard>
+                            <KpiCard label="Tickets ouverts">
+                                <p className={`text-2xl font-bold ${bugsOuverts.length ? 'text-rose-600' : 'text-gray-800'}`}>{bugsOuverts.length}</p>
+                                <p className="text-xs text-gray-400">/ {bugs.length} au total</p>
+                            </KpiCard>
+                        </div>
+
+                        <div className="grid gap-6 md:grid-cols-2">
+                            <div className="rounded-lg bg-white p-6 shadow">
+                                <h3 className="mb-3 font-semibold text-gray-800">Répartition des tâches</h3>
+                                <SegBar segments={[
+                                    { n: tCount.fait, label: 'Fait', color: 'bg-green-500' },
+                                    { n: tCount.en_cours, label: 'En cours', color: 'bg-amber-500' },
+                                    { n: tCount.a_faire, label: 'À faire', color: 'bg-gray-300' },
+                                ]} />
+                            </div>
+                            <div className="rounded-lg bg-white p-6 shadow">
+                                <h3 className="mb-3 font-semibold text-gray-800">Production</h3>
+                                <SegBar segments={[
+                                    { n: bugs.length - bugsOuverts.length, label: 'Résolus', color: 'bg-green-500' },
+                                    { n: bugsOuverts.length, label: 'Ouverts', color: 'bg-rose-500' },
+                                ]} />
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {Object.entries(byType).map(([k, n]) => (
+                                        <span key={k} className={`rounded px-2 py-0.5 text-xs font-medium ${TYPE_COLORS[k] || 'bg-gray-100'}`}>
+                                            {TYPE_ICONS[k]} {typesBug[k] || k} · {n}
+                                        </span>
+                                    ))}
+                                    {!bugs.length && <span className="text-sm text-gray-400">Aucune intervention.</span>}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid gap-6 md:grid-cols-2">
+                            <div className="rounded-lg bg-white p-6 shadow">
+                                <h3 className="mb-3 font-semibold text-gray-800">Jalons</h3>
+                                <ul className="space-y-2 text-sm">
+                                    <Jalon label="Début" date={project.date_debut} />
+                                    <Jalon label="Fin prévue" date={project.date_fin_prevue} />
+                                    <Jalon label="Livraison" date={project.date_livraison} />
+                                </ul>
+                            </div>
+                            <div className="rounded-lg bg-white p-6 shadow">
+                                <h3 className="mb-3 font-semibold text-gray-800">Rattachements</h3>
+                                <div className="space-y-2 text-sm">
+                                    {project.prospect ? (
+                                        <div>
+                                            <span className="text-xs uppercase text-gray-400">Client</span><br />
+                                            <Link href={route('prospects.show', project.prospect.id)} className="text-indigo-600 hover:underline">
+                                                {project.prospect.entreprise} →
+                                            </Link>
+                                        </div>
+                                    ) : <p className="text-gray-400">Aucun client rattaché.</p>}
+                                    {project.tender && (
+                                        <div>
+                                            <span className="text-xs uppercase text-gray-400">Issu de l'AO</span><br />
+                                            <Link href={route('ao.show', project.tender.id)} className="text-indigo-600 hover:underline">
+                                                {project.tender.objet} →
+                                            </Link>
+                                        </div>
+                                    )}
+                                    {project.url_prod && (
+                                        <a href={project.url_prod} target="_blank" rel="noreferrer"
+                                            className="inline-block rounded bg-gray-100 px-2 py-1 text-xs text-indigo-600 hover:bg-gray-200">
+                                            🌐 Voir le site en ligne ↗
+                                        </a>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ---------- PILOTAGE ---------- */}
+                {tab === 'pilotage' && (
+                    <form onSubmit={save} className="mx-auto max-w-2xl space-y-4 rounded-lg bg-white p-6 shadow">
+                        <h3 className="font-semibold text-gray-800">Pilotage</h3>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Intitulé</label>
+                            <input value={form.data.titre} onChange={(e) => form.setData('titre', e.target.value)}
+                                className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Statut</label>
+                                <select value={form.data.statut} onChange={(e) => form.setData('statut', e.target.value)}
+                                    className="mt-1 w-full rounded-md border-gray-300 text-sm">
+                                    {Object.entries(statuts).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Budget (€ HT)</label>
+                                <input type="number" value={form.data.budget} onChange={(e) => form.setData('budget', e.target.value)}
+                                    className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Début</label>
+                                <input type="date" value={form.data.date_debut} onChange={(e) => form.setData('date_debut', e.target.value)}
+                                    className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Fin prévue</label>
+                                <input type="date" value={form.data.date_fin_prevue} onChange={(e) => form.setData('date_fin_prevue', e.target.value)}
+                                    className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Livraison</label>
+                                <input type="date" value={form.data.date_livraison} onChange={(e) => form.setData('date_livraison', e.target.value)}
+                                    className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea rows="4" value={form.data.description} onChange={(e) => form.setData('description', e.target.value)}
+                                className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Notes internes</label>
+                            <textarea rows="5" value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)}
+                                className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                        </div>
+                        <button disabled={form.processing}
+                            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+                            {form.processing ? 'Enregistrement…' : 'Enregistrer'}
+                        </button>
+                        {form.recentlySuccessful && <span className="ml-3 text-sm text-green-600">Enregistré ✓</span>}
+                    </form>
+                )}
+
+                {/* ---------- TÂCHES ---------- */}
+                {tab === 'taches' && (
+                    <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow">
                         <div className="mb-2 flex items-center justify-between">
                             <h3 className="font-semibold text-gray-800">Plan de gestion</h3>
                             <span className="text-sm text-gray-500">{faites}/{tasks.length} — {avancement}%</span>
@@ -65,7 +254,6 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
                         <div className="mb-4 h-2 overflow-hidden rounded-full bg-gray-100">
                             <div className="h-full bg-emerald-500" style={{ width: `${avancement}%` }} />
                         </div>
-
                         <ul className="divide-y divide-gray-100">
                             {tasks.map((t) => (
                                 <li key={t.id} className="flex items-center gap-3 py-2">
@@ -76,39 +264,26 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
                                     <span className={`flex-1 text-sm ${t.statut === 'fait' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
                                         {t.titre}
                                     </span>
-                                    {t.echeance && (
-                                        <span className="text-xs text-gray-400">
-                                            {new Date(t.echeance).toLocaleDateString('fr-FR')}
-                                        </span>
-                                    )}
+                                    {t.echeance && <span className="text-xs text-gray-400">{new Date(t.echeance).toLocaleDateString('fr-FR')}</span>}
                                     <button onClick={() => removeTask(t)} className="text-gray-300 hover:text-red-500" title="Supprimer">✕</button>
                                 </li>
                             ))}
                             {!tasks.length && <li className="py-3 text-sm text-gray-400">Aucune tâche.</li>}
                         </ul>
-
                         <form onSubmit={addTask} className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
                             <input value={newTask.data.titre} onChange={(e) => newTask.setData('titre', e.target.value)}
                                 placeholder="Nouvelle tâche…" className="flex-1 rounded-md border-gray-300 text-sm" />
                             <input type="date" value={newTask.data.echeance} onChange={(e) => newTask.setData('echeance', e.target.value)}
                                 className="rounded-md border-gray-300 text-sm" />
                             <button disabled={newTask.processing || !newTask.data.titre}
-                                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">
-                                + Ajouter
-                            </button>
+                                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">+ Ajouter</button>
                         </form>
                     </div>
+                )}
 
-                    <div className="rounded-lg bg-white p-6 shadow">
-                        <h3 className="mb-3 font-semibold text-gray-800">Description</h3>
-                        <textarea rows="4" value={form.data.description} onChange={(e) => form.setData('description', e.target.value)}
-                            className="w-full rounded-md border-gray-300 text-sm" />
-                        <h3 className="mb-2 mt-4 font-semibold text-gray-800">Notes internes</h3>
-                        <textarea rows="5" value={form.data.notes} onChange={(e) => form.setData('notes', e.target.value)}
-                            className="w-full rounded-md border-gray-300 text-sm" />
-                    </div>
-
-                    <div className="rounded-lg bg-white p-6 shadow">
+                {/* ---------- ENVIRONNEMENTS ---------- */}
+                {tab === 'env' && (
+                    <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow">
                         <h3 className="mb-3 font-semibold text-gray-800">🌐 Environnements & accès</h3>
                         <div className="space-y-3">
                             <EnvField label="Site en ligne (production)" value={form.data.url_prod}
@@ -125,74 +300,68 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
                             {form.processing ? 'Enregistrement…' : 'Enregistrer'}
                         </button>
                     </div>
+                )}
 
+                {/* ---------- PRODUCTION ---------- */}
+                {tab === 'prod' && (
                     <BugsCard project={project} statutsBug={statutsBug} gravites={gravites}
                         typesBug={typesBug} recurrences={recurrences} />
-                </div>
-
-                {/* Colonne droite : pilotage */}
-                <div>
-                    <form onSubmit={save} className="space-y-4 rounded-lg bg-white p-6 shadow">
-                        <h3 className="font-semibold text-gray-800">Pilotage</h3>
-
-                        {project.prospect && (
-                            <div className="text-sm">
-                                <span className="text-xs uppercase text-gray-400">Client</span><br />
-                                <Link href={route('prospects.show', project.prospect.id)} className="text-indigo-600 hover:underline">
-                                    {project.prospect.entreprise} →
-                                </Link>
-                            </div>
-                        )}
-                        {project.tender && (
-                            <div className="text-sm">
-                                <span className="text-xs uppercase text-gray-400">Issu de l’AO</span><br />
-                                <Link href={route('ao.show', project.tender.id)} className="text-indigo-600 hover:underline">
-                                    {project.tender.objet} →
-                                </Link>
-                            </div>
-                        )}
-
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Intitulé</label>
-                            <input value={form.data.titre} onChange={(e) => form.setData('titre', e.target.value)}
-                                className="mt-1 w-full rounded-md border-gray-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Statut</label>
-                            <select value={form.data.statut} onChange={(e) => form.setData('statut', e.target.value)}
-                                className="mt-1 w-full rounded-md border-gray-300 text-sm">
-                                {Object.entries(statuts).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Budget (€ HT)</label>
-                            <input type="number" value={form.data.budget} onChange={(e) => form.setData('budget', e.target.value)}
-                                className="mt-1 w-full rounded-md border-gray-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Début</label>
-                            <input type="date" value={form.data.date_debut} onChange={(e) => form.setData('date_debut', e.target.value)}
-                                className="mt-1 w-full rounded-md border-gray-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Fin prévue</label>
-                            <input type="date" value={form.data.date_fin_prevue} onChange={(e) => form.setData('date_fin_prevue', e.target.value)}
-                                className="mt-1 w-full rounded-md border-gray-300 text-sm" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Livraison</label>
-                            <input type="date" value={form.data.date_livraison} onChange={(e) => form.setData('date_livraison', e.target.value)}
-                                className="mt-1 w-full rounded-md border-gray-300 text-sm" />
-                        </div>
-                        <button disabled={form.processing}
-                            className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
-                            {form.processing ? 'Enregistrement…' : 'Enregistrer'}
-                        </button>
-                        {form.recentlySuccessful && <p className="text-sm text-green-600">Enregistré ✓</p>}
-                    </form>
-                </div>
+                )}
             </div>
         </AuthenticatedLayout>
+    );
+}
+
+function KpiCard({ label, children }) {
+    return (
+        <div className="rounded-lg bg-white p-4 shadow">
+            <div className="text-xs uppercase text-gray-400">{label}</div>
+            <div className="mt-1">{children}</div>
+        </div>
+    );
+}
+
+function Donut({ value }) {
+    const r = 32, c = 2 * Math.PI * r;
+    const off = c * (1 - Math.min(value, 100) / 100);
+    return (
+        <svg width="80" height="80" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r={r} fill="none" stroke="#e5e7eb" strokeWidth="9" />
+            <circle cx="40" cy="40" r={r} fill="none" stroke="#10b981" strokeWidth="9"
+                strokeDasharray={c} strokeDashoffset={off} strokeLinecap="round" transform="rotate(-90 40 40)" />
+            <text x="40" y="45" textAnchor="middle" className="fill-gray-800 text-base font-bold">{value}%</text>
+        </svg>
+    );
+}
+
+function SegBar({ segments }) {
+    const total = segments.reduce((s, x) => s + x.n, 0) || 1;
+    return (
+        <div>
+            <div className="flex h-3 overflow-hidden rounded-full bg-gray-100">
+                {segments.map((s, i) => s.n > 0 && (
+                    <div key={i} className={s.color} style={{ width: `${(s.n / total) * 100}%` }} />
+                ))}
+            </div>
+            <div className="mt-2 flex flex-wrap gap-3 text-xs text-gray-600">
+                {segments.map((s, i) => (
+                    <span key={i} className="flex items-center gap-1">
+                        <span className={`inline-block h-2 w-2 rounded-full ${s.color}`} />{s.label} · <b>{s.n}</b>
+                    </span>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+function Jalon({ label, date }) {
+    return (
+        <li className="flex items-center justify-between">
+            <span className="text-gray-500">{label}</span>
+            <span className={date ? 'font-medium text-gray-800' : 'text-gray-300'}>
+                {date ? new Date(date).toLocaleDateString('fr-FR') : '— non défini'}
+            </span>
+        </li>
     );
 }
 
