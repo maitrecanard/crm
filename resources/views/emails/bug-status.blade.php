@@ -11,7 +11,7 @@
                 <tr><td style="padding:28px;">
                     <p style="margin:0 0 14px;font-size:15px;">Bonjour,</p>
 
-                    <p style="margin:0 0 14px;font-size:14px;line-height:1.6;">{{ $message }}</p>
+                    <p style="margin:0 0 14px;font-size:14px;line-height:1.6;">{{ $corps }}</p>
 
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0;border:1px solid #e5e7eb;border-radius:6px;">
                         <tr><td style="padding:12px 16px;font-size:13px;color:#6b7280;">{{ $typeLabel }}</td>

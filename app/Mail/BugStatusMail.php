@@ -34,7 +34,8 @@ class BugStatusMail extends Mailable
         return new Content(view: 'emails.bug-status', with: [
             'bug'     => $this->bug,
             'libelle' => $this->bug->statutLabel(),
-            'message' => $this->bug->clientMessage(),
+            // NB: « message » est réservé dans les vues d'e-mail Laravel -> on nomme « corps ».
+            'corps'   => $this->bug->clientMessage(),
             'typeLabel' => Bug::TYPES[$this->bug->type] ?? 'Intervention',
             'societe' => config('crm.support.name'),
         ]);
