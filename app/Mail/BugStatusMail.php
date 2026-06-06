@@ -25,7 +25,7 @@ class BugStatusMail extends Mailable
         return new Envelope(
             from: new Address(config('crm.support.email'), config('crm.support.name')),
             bcc: array_values(array_filter([config('crm.support.copy')])),
-            subject: "[{$this->bug->subjectPrefix()}] {$this->bug->titre} — {$this->bug->statutLabel()}",
+            subject: "[{$this->bug->subjectPrefix()}] {$this->bug->reference} — {$this->bug->titre} — {$this->bug->statutLabel()}",
         );
     }
 

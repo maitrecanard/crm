@@ -14,7 +14,9 @@
                     <p style="margin:0 0 14px;font-size:14px;line-height:1.6;">{{ $corps }}</p>
 
                     <table width="100%" cellpadding="0" cellspacing="0" style="margin:18px 0;border:1px solid #e5e7eb;border-radius:6px;">
-                        <tr><td style="padding:12px 16px;font-size:13px;color:#6b7280;">{{ $typeLabel }}</td>
+                        <tr><td style="padding:12px 16px;font-size:13px;color:#6b7280;">Référence</td>
+                            <td style="padding:12px 16px;font-size:14px;font-weight:bold;text-align:right;">{{ $bug->reference }}</td></tr>
+                        <tr><td style="padding:12px 16px;font-size:13px;color:#6b7280;border-top:1px solid #f3f4f6;">{{ $typeLabel }}</td>
                             <td style="padding:12px 16px;font-size:14px;font-weight:bold;text-align:right;">{{ $bug->titre }}</td></tr>
                         <tr><td style="padding:12px 16px;font-size:13px;color:#6b7280;border-top:1px solid #f3f4f6;">État</td>
                             <td style="padding:12px 16px;font-size:14px;font-weight:bold;text-align:right;border-top:1px solid #f3f4f6;">{{ $libelle }}</td></tr>

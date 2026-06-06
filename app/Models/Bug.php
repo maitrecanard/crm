@@ -8,9 +8,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Bug extends Model
 {
     protected $fillable = [
-        'project_id', 'type', 'titre', 'description', 'statut', 'gravite',
+        'project_id', 'reference', 'type', 'titre', 'description', 'statut', 'gravite',
         'recurrence', 'prochaine_echeance', 'issue_git', 'notifie_le', 'resolved_at',
     ];
+
+    protected static function booted(): void
+    {
+        static::created(function (Bug $bug) {
+            if (empty($bug->reference)) {
+                $bug->reference = sprintf('TIC-%d-%04d', $bug->created_at?->year ?? now()->year, $bug->id);
+                $bug->saveQuietly();
+            }
+        });
+    }
 
     protected $casts = [
         'prochaine_echeance' => 'date',

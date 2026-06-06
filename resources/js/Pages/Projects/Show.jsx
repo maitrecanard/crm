@@ -500,7 +500,10 @@ function BugRow({ bug, statutsBug, gravites, typesBug }) {
                 {bug.type !== 'maintenance' && (
                     <span className={`rounded px-2 py-0.5 text-xs font-medium ${GRAVITE_COLORS[bug.gravite]}`}>{gravites[bug.gravite]}</span>
                 )}
-                <span className="flex-1 text-sm font-medium text-gray-800">{bug.titre}</span>
+                <span className="flex-1 text-sm font-medium text-gray-800">
+                    {bug.reference && <span className="mr-1 font-mono text-xs text-gray-400">{bug.reference}</span>}
+                    {bug.titre}
+                </span>
                 <select value={bug.statut} onChange={(e) => setStatut(e.target.value)}
                     className="rounded-md border-gray-300 text-xs" title="Changer l’étape (notifie le client)">
                     {Object.entries(statutsBug).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
