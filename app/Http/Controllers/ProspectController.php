@@ -77,6 +77,69 @@ class ProspectController extends Controller
         return back()->with('success', 'Prospect mis à jour.');
     }
 
+    /** Génère un e-mail de prospection par IA et l'enregistre comme scénario email. */
+    public function generateEmail(Prospect $prospect)
+    {
+        $res = \App\Services\AiEmailWriter::generate($prospect);
+        if (! $res['ok']) {
+            return back()->with('error', 'Génération IA échouée : '.$res['error']);
+        }
+
+        $scenarios = $prospect->scenarios ?? [];
+        $scenarios['email'] = $res['email'];
+        $prospect->update(['scenarios' => $scenarios]);
+
+        return back()->with('success', 'E-mail généré par l’IA — relis-le puis envoie-le.');
+    }
+
+    /** Envoie un e-mail de prospection au prospect, depuis le CRM (identité vendeur). */
+    public function sendEmail(Request $request, Prospect $prospect)
+    {
+        $data = $request->validate(['corps' => ['required', 'string', 'max:10000']]);
+
+        if (! $prospect->email) {
+            return back()->with('error', 'Ce prospect n’a pas d’adresse e-mail.');
+        }
+
+        // Extrait l'objet (1re ligne « Objet : … ») du corps.
+        $lines = preg_split('/\r?\n/', trim($data['corps']));
+        $subject = "Prise de contact — ".config('crm.vendeur.societe');
+        $body = $data['corps'];
+        if (preg_match('/^\s*objet\s*:\s*(.+)/i', $lines[0], $m)) {
+            $subject = trim($m[1]);
+            $body = ltrim(implode("\n", array_slice($lines, 1)));
+        }
+
+        $vendeur = config('crm.vendeur');
+        $fromName = trim($vendeur['prenom'].' — '.$vendeur['societe']);
+        $replyTo = $vendeur['email'] ?: config('crm.support.email');
+
+        try {
+            \Illuminate\Support\Facades\Mail::raw($body, function ($mail) use ($prospect, $subject, $fromName, $replyTo) {
+                $mail->to($prospect->email)
+                    ->subject($subject)
+                    ->from(config('crm.support.email'), $fromName)
+                    ->replyTo($replyTo);
+            });
+        } catch (\Throwable $e) {
+            report($e);
+
+            return back()->with('error', 'E-mail NON envoyé : '.$e->getMessage());
+        }
+
+        // Trace l'envoi dans le suivi + passe « contacté » si encore à contacter.
+        $prospect->interactions()->create([
+            'type' => 'email',
+            'note' => "Email envoyé depuis le CRM : « {$subject} »",
+            'date' => now(),
+        ]);
+        if ($prospect->statut === 'a_contacter') {
+            $prospect->update(['statut' => 'contacte']);
+        }
+
+        return back()->with('success', 'E-mail envoyé à '.$prospect->email.'.');
+    }
+
     /** Enregistre (ou réinitialise) un scénario personnalisé pour ce prospect. */
     public function saveScenario(Request $request, Prospect $prospect)
     {

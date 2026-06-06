@@ -460,18 +460,38 @@ function mailtoDepuisTexte(prospect, text) {
 }
 
 function ScenarioEmail({ prospect, vd }) {
+    const [busy, setBusy] = useState(false);
+
+    const genererIA = () => {
+        setBusy(true);
+        router.post(route('prospects.generateEmail', prospect.id), {}, {
+            preserveScroll: true, onFinish: () => setBusy(false),
+        });
+    };
+    const envoyer = (text) => {
+        if (!confirm(`Envoyer ce mail à ${prospect.email} depuis le CRM ?`)) return;
+        router.post(route('prospects.sendEmail', prospect.id), { corps: text }, { preserveScroll: true });
+    };
+
     return (
         <ScenarioEditable
+            key={prospect.scenarios?.email ?? 'defaut'}
             prospect={prospect} slug="email" titre="✉️ Scénario d’email"
             defaut={defautEmail(prospect, vd)}
-            actions={(text) => {
-                const m = mailtoDepuisTexte(prospect, text);
-                return m && (
-                    <a href={m} className="rounded-md bg-indigo-600 px-3 py-1 text-sm font-medium text-white">
-                        Écrire
-                    </a>
-                );
-            }}
+            actions={(text) => (
+                <>
+                    <button type="button" onClick={genererIA} disabled={busy}
+                        className="rounded-md bg-purple-600 px-3 py-1 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50">
+                        {busy ? '…' : '✨ Générer (IA)'}
+                    </button>
+                    {prospect.email && (
+                        <button type="button" onClick={() => envoyer(text)}
+                            className="rounded-md bg-emerald-600 px-3 py-1 text-sm font-medium text-white hover:bg-emerald-700">
+                            📨 Envoyer
+                        </button>
+                    )}
+                </>
+            )}
             hint={!prospect.email && (
                 <p className="mb-2 text-xs text-amber-600">Aucun email — à trouver (site /contact, LinkedIn).</p>
             )}

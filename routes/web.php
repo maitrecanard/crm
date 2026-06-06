@@ -19,6 +19,8 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class])->group(
     Route::get('/prospects/{prospect}', [ProspectController::class, 'show'])->name('prospects.show');
     Route::put('/prospects/{prospect}', [ProspectController::class, 'update'])->name('prospects.update');
     Route::put('/prospects/{prospect}/scenarios', [ProspectController::class, 'saveScenario'])->name('prospects.scenarios');
+    Route::post('/prospects/{prospect}/generate-email', [ProspectController::class, 'generateEmail'])->name('prospects.generateEmail');
+    Route::post('/prospects/{prospect}/send-email', [ProspectController::class, 'sendEmail'])->name('prospects.sendEmail');
     Route::post('/prospects/{prospect}/interactions', [InteractionController::class, 'store'])->name('interactions.store');
 
     Route::get('/appels-offres', [AppelOffreController::class, 'index'])->name('ao.index');

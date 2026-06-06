@@ -9,6 +9,17 @@ return [
         'societe' => env('CRM_VENDEUR_SOCIETE', 'TechCare Solutions'),
         'prenom'  => env('CRM_VENDEUR_PRENOM', 'Mathieu'),
         'contact' => env('CRM_VENDEUR_CONTACT', ''),
+        // Adresse de réponse pour les e-mails de prospection envoyés depuis le CRM.
+        'email'   => env('CRM_VENDEUR_EMAIL', ''),
+    ],
+
+    /*
+    | Génération de mails de prospection par IA (API Anthropic). Clé requise
+    | (ANTHROPIC_API_KEY). Sans clé, le bouton « Générer » renvoie une erreur claire.
+    */
+    'ai' => [
+        'key'   => env('ANTHROPIC_API_KEY', ''),
+        'model' => env('CRM_AI_MODEL', 'claude-sonnet-4-6'),
     ],
 
     /*
