@@ -7,10 +7,10 @@ return [
     */
     'vendeur' => [
         'societe' => env('CRM_VENDEUR_SOCIETE', 'TechCare Solutions'),
-        'prenom'  => env('CRM_VENDEUR_PRENOM', 'Mathieu'),
-        'contact' => env('CRM_VENDEUR_CONTACT', ''),
-        // Adresse de réponse pour les e-mails de prospection envoyés depuis le CRM.
-        'email'   => env('CRM_VENDEUR_EMAIL', ''),
+        'prenom'  => env('CRM_VENDEUR_PRENOM', 'Mathieu Siaudeau'),
+        'contact' => env('CRM_VENDEUR_CONTACT', '07.62.61.26.46'),
+        // Expéditeur ET adresse de réponse des e-mails de prospection (depuis le CRM).
+        'email'   => env('CRM_VENDEUR_EMAIL', 'mathieu.siaudeau@techcaresolutions.fr'),
     ],
 
     /*

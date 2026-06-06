@@ -112,14 +112,14 @@ class ProspectController extends Controller
 
         $vendeur = config('crm.vendeur');
         $fromName = trim($vendeur['prenom'].' — '.$vendeur['societe']);
-        $replyTo = $vendeur['email'] ?: config('crm.support.email');
+        $fromEmail = $vendeur['email'] ?: config('crm.support.email');
 
         try {
-            \Illuminate\Support\Facades\Mail::raw($body, function ($mail) use ($prospect, $subject, $fromName, $replyTo) {
+            \Illuminate\Support\Facades\Mail::raw($body, function ($mail) use ($prospect, $subject, $fromName, $fromEmail) {
                 $mail->to($prospect->email)
                     ->subject($subject)
-                    ->from(config('crm.support.email'), $fromName)
-                    ->replyTo($replyTo);
+                    ->from($fromEmail, $fromName)
+                    ->replyTo($fromEmail);
             });
         } catch (\Throwable $e) {
             report($e);

@@ -20,11 +20,11 @@ class RelanceMail extends Mailable
     public function envelope(): Envelope
     {
         $vendeur = config('crm.vendeur');
-        $replyTo = $vendeur['email'] ?: config('crm.support.email');
+        $from = $vendeur['email'] ?: config('crm.support.email');
 
         return new Envelope(
-            from: new Address(config('crm.support.email'), trim($vendeur['prenom'].' — '.$vendeur['societe'])),
-            replyTo: [new Address($replyTo)],
+            from: new Address($from, trim($vendeur['prenom'].' — '.$vendeur['societe'])),
+            replyTo: [new Address($from)],
             subject: 'Suite à mon précédent message — '.$vendeur['societe'],
         );
     }

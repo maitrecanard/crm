@@ -46,12 +46,19 @@ class AiEmailWriter
 
         $analyse = self::analyzeSite($prospect->source_url);
 
+        $signature = trim("{$vendeur['prenom']} — {$vendeur['societe']}");
+        if ($vendeur['contact']) {
+            $signature .= "\nTél : {$vendeur['contact']}";
+        }
+        if ($vendeur['email']) {
+            $signature .= "\n{$vendeur['email']}";
+        }
+
         $prompt = "Données de l'entreprise prospect :\n{$data}\n\n"
             ."Analyse du site :\n{$analyse}\n\n"
-            ."Vendeur (expéditeur) : {$vendeur['prenom']}, {$vendeur['societe']}"
-            .($vendeur['contact'] ? " ({$vendeur['contact']})" : '').".\n"
             ."Rédige l'e-mail : une courte analyse implicite, la lacune détectée comme accroche, "
-            ."puis la proposition de valeur et un appel à un échange.";
+            ."puis la proposition de valeur et un appel à un échange.\n"
+            ."Termine OBLIGATOIREMENT par cette signature exacte :\n{$signature}";
 
         try {
             $resp = Http::withHeaders([

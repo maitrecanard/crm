@@ -19,7 +19,8 @@
 
         <p>Bien cordialement,<br>
             <strong>{{ $vendeur['prenom'] }}</strong> — {{ $vendeur['societe'] }}
-            @if (!empty($vendeur['contact']))<br><span style="color:#6b7280;">{{ $vendeur['contact'] }}</span>@endif
+            @if (!empty($vendeur['contact']))<br><span style="color:#6b7280;">Tél : {{ $vendeur['contact'] }}</span>@endif
+            @if (!empty($vendeur['email']))<br><span style="color:#6b7280;">{{ $vendeur['email'] }}</span>@endif
         </p>
     </div>
 </body>
