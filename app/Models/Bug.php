@@ -101,4 +101,9 @@ class Bug extends Model
     {
         return $this->belongsTo(Project::class);
     }
+
+    public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(BugMessage::class)->orderBy('created_at');
+    }
 }

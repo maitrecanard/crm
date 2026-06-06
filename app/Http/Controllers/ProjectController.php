@@ -87,7 +87,7 @@ class ProjectController extends Controller
             'prospect:id,entreprise,localite,telephone,email',
             'tender:id,idweb,objet',
             'tasks',
-            'bugs',
+            'bugs.messages',
         ]);
 
         return Inertia::render('Projects/Show', [

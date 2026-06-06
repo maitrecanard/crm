@@ -46,6 +46,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class])->group(
     // Suivi de production : bugs déclarés par le client.
     Route::post('/projets/{project}/bugs', [BugController::class, 'store'])->name('bugs.store');
     Route::put('/bugs/{bug}', [BugController::class, 'update'])->name('bugs.update');
+    Route::post('/bugs/{bug}/messages', [BugController::class, 'storeMessage'])->name('bugs.messages.store');
     Route::delete('/bugs/{bug}', [BugController::class, 'destroy'])->name('bugs.destroy');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

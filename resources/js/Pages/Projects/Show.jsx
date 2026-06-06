@@ -470,6 +470,14 @@ function BugsCard({ project, statutsBug, gravites, typesBug, recurrences }) {
 
 function BugRow({ bug, statutsBug, gravites, typesBug }) {
     const [issue, setIssue] = useState(bug.issue_git || '');
+    const messages = bug.messages || [];
+    const comment = useForm({ corps: '', interne: false });
+    const addComment = (e) => {
+        e.preventDefault();
+        comment.post(route('bugs.messages.store', bug.id), {
+            preserveScroll: true, preserveState: true, onSuccess: () => comment.reset(),
+        });
+    };
     const setStatut = (statut) => router.put(route('bugs.update', bug.id), { statut },
         { preserveScroll: true, preserveState: true });
     const saveIssue = () => {
@@ -517,6 +525,41 @@ function BugRow({ bug, statutsBug, gravites, typesBug }) {
             <p className="mt-1 text-[11px] text-gray-400">
                 {bug.notifie_le ? `Client notifié le ${new Date(bug.notifie_le).toLocaleString('fr-FR')}` : 'Pas encore notifié'}
             </p>
+
+            {/* Fil de commentaires / résolution */}
+            {messages.length > 0 && (
+                <ul className="mt-3 space-y-2 border-t border-gray-100 pt-3">
+                    {messages.map((m) => (
+                        <li key={m.id} className={`rounded-md p-2 text-xs ${m.interne ? 'bg-yellow-50' : 'bg-indigo-50'}`}>
+                            <div className="mb-0.5 flex items-center gap-2 text-[11px]">
+                                {m.interne
+                                    ? <span className="rounded bg-yellow-200 px-1.5 font-medium text-yellow-800">Note interne</span>
+                                    : <span className="rounded bg-indigo-200 px-1.5 font-medium text-indigo-800">Transmis au client</span>}
+                                <span className="text-gray-400">{new Date(m.created_at).toLocaleString('fr-FR')}</span>
+                            </div>
+                            <p className="whitespace-pre-line text-gray-700">{m.corps}</p>
+                        </li>
+                    ))}
+                </ul>
+            )}
+
+            <form onSubmit={addComment} className="mt-2 space-y-2">
+                <textarea rows="2" value={comment.data.corps} onChange={(e) => comment.setData('corps', e.target.value)}
+                    placeholder="Commentaire, avancement ou résolution…" className="w-full rounded-md border-gray-200 text-xs" />
+                <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1.5 text-xs text-gray-600">
+                        <input type="checkbox" checked={comment.data.interne}
+                            onChange={(e) => comment.setData('interne', e.target.checked)}
+                            className="rounded border-gray-300 text-indigo-600" />
+                        Ne pas transmettre au client (note interne)
+                    </label>
+                    <button disabled={comment.processing || !comment.data.corps}
+                        className={`rounded-md px-3 py-1.5 text-xs font-medium text-white disabled:opacity-50 ${
+                            comment.data.interne ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                        {comment.data.interne ? 'Ajouter une note interne' : 'Enregistrer + transmettre'}
+                    </button>
+                </div>
+            </form>
         </li>
     );
 }

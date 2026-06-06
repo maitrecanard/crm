@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\BugMessageMail;
 use App\Mail\BugStatusMail;
 use App\Models\Bug;
 use App\Models\Project;
 use Illuminate\Http\Request;
+use Illuminate\Mail\Mailable;
 use Illuminate\Support\Facades\Mail;
 
 class BugController extends Controller
@@ -65,6 +67,31 @@ class BugController extends Controller
             : back()->with('error', 'Statut mis à jour, mais e-mail NON envoyé : '.$res['reason']);
     }
 
+    /** Ajoute un commentaire / une résolution au ticket, transmis au client SAUF si interne. */
+    public function storeMessage(Request $request, Bug $bug)
+    {
+        $data = $request->validate([
+            'corps'   => ['required', 'string', 'max:5000'],
+            'interne' => ['boolean'],
+        ]);
+        $interne = (bool) ($data['interne'] ?? false);
+
+        $message = $bug->messages()->create(['corps' => $data['corps'], 'interne' => $interne]);
+
+        if ($interne) {
+            return back()->with('success', 'Note interne ajoutée (non transmise au client).');
+        }
+
+        $res = $this->sendToClient($bug, new BugMessageMail($bug, $message));
+        if ($res['sent']) {
+            $message->forceFill(['notifie_le' => now()])->save();
+
+            return back()->with('success', 'Message ajouté et transmis au client.');
+        }
+
+        return back()->with('error', 'Message ajouté, mais e-mail NON envoyé : '.$res['reason']);
+    }
+
     public function destroy(Bug $bug)
     {
         $project = $bug->project_id;
@@ -73,11 +100,22 @@ class BugController extends Controller
         return back(fallback: route('projects.show', $project));
     }
 
+    /** Notifie le client d'un changement d'étape (e-mail de statut). */
+    private function notify(Bug $bug): array
+    {
+        $res = $this->sendToClient($bug, new BugStatusMail($bug));
+        if ($res['sent']) {
+            $bug->forceFill(['notifie_le' => now()])->save();
+        }
+
+        return $res;
+    }
+
     /**
-     * Envoie l'e-mail de suivi au client (au nom du support).
+     * Envoie un e-mail au client du projet (au nom du support).
      * @return array{sent: bool, reason: string}
      */
-    private function notify(Bug $bug): array
+    private function sendToClient(Bug $bug, Mailable $mail): array
     {
         $bug->loadMissing('project.prospect');
         $email = $bug->project?->prospect?->email;
@@ -87,8 +125,7 @@ class BugController extends Controller
         }
 
         try {
-            Mail::to($email)->send(new BugStatusMail($bug));
-            $bug->forceFill(['notifie_le' => now()])->save();
+            Mail::to($email)->send($mail);
 
             return ['sent' => true, 'reason' => ''];
         } catch (\Throwable $e) {
