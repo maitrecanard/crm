@@ -127,17 +127,22 @@ class ProspectController extends Controller
             return back()->with('error', 'E-mail NON envoyé : '.$e->getMessage());
         }
 
-        // Trace l'envoi dans le suivi + passe « contacté » si encore à contacter.
+        // Historique : on archive l'e-mail complet (objet + corps) dans le suivi.
         $prospect->interactions()->create([
             'type' => 'email',
-            'note' => "Email envoyé depuis le CRM : « {$subject} »",
+            'note' => "📧 Email envoyé : « {$subject} »\n\n{$body}",
             'date' => now(),
         ]);
-        if ($prospect->statut === 'a_contacter') {
-            $prospect->update(['statut' => 'contacte']);
-        }
 
-        return back()->with('success', 'E-mail envoyé à '.$prospect->email.'.');
+        // Passe « contacté » si encore à contacter + programme une relance à J+7.
+        $relance = now()->addDays(7);
+        $prospect->update([
+            'statut'            => $prospect->statut === 'a_contacter' ? 'contacte' : $prospect->statut,
+            'prochaine_relance' => $relance,
+        ]);
+
+        return back()->with('success', 'E-mail envoyé à '.$prospect->email
+            .'. Relance programmée le '.$relance->format('d/m/Y').'.');
     }
 
     /** Enregistre (ou réinitialise) un scénario personnalisé pour ce prospect. */
