@@ -19,7 +19,7 @@ const FACT_BADGE = {
 };
 
 export default function ClientShow({ client, besoins, devis, facturesPonctuelles, facturation,
-    emailGenere, statutsBesoin, statutsDevis, statutsFacture }) {
+    contrats, emailGenere, statutsBesoin, statutsDevis, statutsFacture, statutsContrat }) {
     return (
         <AuthenticatedLayout header={
             <div className="flex items-center gap-3">
@@ -42,6 +42,7 @@ export default function ClientShow({ client, besoins, devis, facturesPonctuelles
                         <a href="#besoins" className="rounded-md bg-white px-3 py-1 text-indigo-600 hover:bg-emerald-100">Besoins</a>
                         <a href="#devis" className="rounded-md bg-white px-3 py-1 text-indigo-600 hover:bg-emerald-100">Devis</a>
                         <a href="#factures" className="rounded-md bg-white px-3 py-1 text-indigo-600 hover:bg-emerald-100">Factures</a>
+                        <a href="#contrats" className="rounded-md bg-white px-3 py-1 text-indigo-600 hover:bg-emerald-100">Contrats</a>
                         <a href="#email" className="rounded-md bg-white px-3 py-1 text-indigo-600 hover:bg-emerald-100">✉️ Email</a>
                     </nav>
                 </div>
@@ -69,6 +70,8 @@ export default function ClientShow({ client, besoins, devis, facturesPonctuelles
                     <FacturationMensuelle prospect={client} facturation={facturation} />
                     <FacturesPonctuellesCard client={client} factures={facturesPonctuelles} statuts={statutsFacture} />
                 </div>
+
+                <ContratsCard client={client} contrats={contrats} statuts={statutsContrat} />
 
                 <EmailCard client={client} emailGenere={emailGenere} />
             </div>
@@ -224,6 +227,97 @@ function FacturesPonctuellesCard({ client, factures, statuts }) {
                     className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Ajouter</button>
             </form>
         </div>
+    );
+}
+
+const CONTRAT_BADGE = {
+    brouillon: 'bg-gray-100 text-gray-600', envoye: 'bg-blue-100 text-blue-700', signe: 'bg-green-100 text-green-700',
+};
+
+function ContratsCard({ client, contrats, statuts }) {
+    const add = useForm({ objet: '', montant_ht: '', reference: '', date_contrat: '' });
+    const submit = (e) => { e.preventDefault(); add.post(route('contrats.store', client.id), { preserveScroll: true, onSuccess: () => add.reset() }); };
+    return (
+        <div id="contrats" className="rounded-lg bg-white p-6 shadow">
+            <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-800">📄 Contrats ({contrats.length})</h3>
+                <Link href={route('parametres.edit')} className="text-xs text-indigo-600 hover:underline">
+                    Modifier le modèle de conditions →
+                </Link>
+            </div>
+            <ul className="space-y-3">
+                {contrats.map((c) => <ContratRow key={c.id} contrat={c} client={client} statuts={statuts} />)}
+                {contrats.length === 0 && <li className="text-sm text-gray-400">Aucun contrat.</li>}
+            </ul>
+            <form onSubmit={submit} className="mt-4 space-y-2 border-t border-gray-100 pt-4">
+                <p className="text-xs text-gray-500">Génère un contrat à partir du modèle de conditions courant (éditable ensuite).</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    <input value={add.data.objet} onChange={(e) => add.setData('objet', e.target.value)}
+                        placeholder="Objet du contrat" className="col-span-2 rounded-md border-gray-300 text-sm" />
+                    <input type="number" step="0.01" value={add.data.montant_ht} onChange={(e) => add.setData('montant_ht', e.target.value)}
+                        placeholder="Montant HT" className="rounded-md border-gray-300 text-sm" />
+                    <input value={add.data.reference} onChange={(e) => add.setData('reference', e.target.value)}
+                        placeholder="Réf. (auto si vide)" className="rounded-md border-gray-300 text-sm" />
+                </div>
+                <button disabled={add.processing || !add.data.objet}
+                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+                    Générer le contrat
+                </button>
+            </form>
+        </div>
+    );
+}
+
+function ContratRow({ contrat, client, statuts }) {
+    const edit = useForm({
+        objet: contrat.objet || '', montant_ht: contrat.montant_ht || '',
+        reference: contrat.reference || '', conditions: contrat.conditions || '',
+    });
+    const save = (e) => { e.preventDefault(); edit.put(route('contrats.update', contrat.id), { preserveScroll: true }); };
+    const setStatut = (statut) => router.put(route('contrats.update', contrat.id), { statut }, { preserveScroll: true });
+    const send = () => confirm(`Envoyer le contrat en PDF à ${client.email || '—'} ?`)
+        && router.post(route('contrats.send', contrat.id), {}, { preserveScroll: true });
+    const remove = () => confirm('Supprimer ce contrat ?') && router.delete(route('contrats.destroy', contrat.id), { preserveScroll: true });
+
+    return (
+        <li className="rounded-md border border-gray-100 p-3 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+                <span className="font-medium text-gray-800">{contrat.reference || 'Sans réf.'}</span>
+                <span className="text-gray-600">— {contrat.objet}</span>
+                {contrat.montant_ht != null && <span className="text-gray-500">· {euro(contrat.montant_ht)}</span>}
+                <select value={contrat.statut} onChange={(e) => setStatut(e.target.value)}
+                    className={`ml-auto rounded-full border-0 px-2 py-0.5 text-xs font-medium ${CONTRAT_BADGE[contrat.statut]}`}>
+                    {Object.entries(statuts).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </select>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+                <a href={route('contrats.pdf', contrat.id)} target="_blank" rel="noreferrer"
+                    className="rounded-md bg-gray-100 px-3 py-1 font-medium text-gray-700 hover:bg-gray-200">⬇ PDF</a>
+                <button onClick={send} disabled={!client.email}
+                    className="rounded-md bg-indigo-600 px-3 py-1 font-medium text-white disabled:opacity-50">✉️ Envoyer en PDF</button>
+                {contrat.envoye_le && <span className="text-gray-400">envoyé le {new Date(contrat.envoye_le).toLocaleDateString('fr-FR')}</span>}
+                <button onClick={remove} className="ml-auto text-gray-300 hover:text-rose-500">Supprimer</button>
+            </div>
+            <details className="mt-2">
+                <summary className="cursor-pointer text-xs text-indigo-600">Éditer l’objet, le montant et les conditions</summary>
+                <form onSubmit={save} className="mt-2 space-y-2">
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                        <input value={edit.data.reference} onChange={(e) => edit.setData('reference', e.target.value)}
+                            placeholder="Référence" className="rounded-md border-gray-300 text-sm" />
+                        <input value={edit.data.objet} onChange={(e) => edit.setData('objet', e.target.value)}
+                            placeholder="Objet" className="rounded-md border-gray-300 text-sm" />
+                        <input type="number" step="0.01" value={edit.data.montant_ht} onChange={(e) => edit.setData('montant_ht', e.target.value)}
+                            placeholder="Montant HT" className="rounded-md border-gray-300 text-sm" />
+                    </div>
+                    <textarea rows="10" value={edit.data.conditions} onChange={(e) => edit.setData('conditions', e.target.value)}
+                        className="w-full rounded-md border-gray-300 font-mono text-xs" />
+                    <button disabled={edit.processing}
+                        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+                        {edit.processing ? 'Enregistrement…' : 'Enregistrer le contrat'}
+                    </button>
+                </form>
+            </details>
+        </li>
     );
 }
 

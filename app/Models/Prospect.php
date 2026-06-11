@@ -74,6 +74,11 @@ class Prospect extends Model
         return $this->hasMany(FacturePonctuelle::class)->orderByDesc('date_facture')->latest();
     }
 
+    public function contrats(): HasMany
+    {
+        return $this->hasMany(Contrat::class)->latest();
+    }
+
     /** Liste des mois concernés, du 1er mois de facturation au mois courant. */
     public function periodesAttendues(): array
     {

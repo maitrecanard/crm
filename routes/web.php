@@ -3,7 +3,9 @@
 use App\Http\Controllers\AppelOffreController;
 use App\Http\Controllers\BugController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\ContratController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ParametresController;
 use App\Http\Controllers\InteractionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
@@ -50,6 +52,16 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class])->group(
     Route::post('/clients/{client}/factures', [ClientController::class, 'storeFacture'])->name('factures.store');
     Route::put('/factures-ponctuelles/{facture}', [ClientController::class, 'updateFacture'])->name('factures.update');
     Route::delete('/factures-ponctuelles/{facture}', [ClientController::class, 'destroyFacture'])->name('factures.destroy');
+    // Contrats
+    Route::post('/clients/{client}/contrats', [ContratController::class, 'store'])->name('contrats.store');
+    Route::put('/contrats/{contrat}', [ContratController::class, 'update'])->name('contrats.update');
+    Route::delete('/contrats/{contrat}', [ContratController::class, 'destroy'])->name('contrats.destroy');
+    Route::get('/contrats/{contrat}/pdf', [ContratController::class, 'pdf'])->name('contrats.pdf');
+    Route::post('/contrats/{contrat}/send', [ContratController::class, 'send'])->name('contrats.send');
+
+    // Paramètres (modèle de conditions de contrat)
+    Route::get('/parametres', [ParametresController::class, 'edit'])->name('parametres.edit');
+    Route::put('/parametres', [ParametresController::class, 'update'])->name('parametres.update');
 
     Route::get('/projets', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('/projets/create', [ProjectController::class, 'create'])->name('projects.create');

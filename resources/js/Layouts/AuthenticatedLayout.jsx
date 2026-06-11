@@ -56,6 +56,12 @@ export default function AuthenticatedLayout({ header, children }) {
                                 >
                                     Projets
                                 </NavLink>
+                                <NavLink
+                                    href={route('parametres.edit')}
+                                    active={route().current('parametres.*')}
+                                >
+                                    Paramètres
+                                </NavLink>
                             </div>
                         </div>
 

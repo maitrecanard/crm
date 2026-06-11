@@ -37,7 +37,7 @@ class ClientController extends Controller
         abort_unless($client->est_client, 404);
 
         $client->load(
-            'besoins', 'devis', 'facturesPonctuelles', 'facturesMensuelles',
+            'besoins', 'devis', 'facturesPonctuelles', 'facturesMensuelles', 'contrats',
             'projects:id,prospect_id,titre,statut',
         );
 
@@ -46,6 +46,7 @@ class ClientController extends Controller
             'besoins' => $client->besoins,
             'devis'   => $client->devis,
             'facturesPonctuelles' => $client->facturesPonctuelles,
+            'contrats' => $client->contrats,
             'facturation' => [
                 'active'     => $client->facturation_active,
                 'jour'       => $client->facturation_jour,
@@ -58,6 +59,7 @@ class ClientController extends Controller
             'statutsBesoin' => Besoin::STATUTS,
             'statutsDevis'  => Devis::STATUTS,
             'statutsFacture' => FacturePonctuelle::STATUTS,
+            'statutsContrat' => \App\Models\Contrat::STATUTS,
         ]);
     }
 
