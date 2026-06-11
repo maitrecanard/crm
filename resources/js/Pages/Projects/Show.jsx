@@ -397,6 +397,10 @@ const TYPE_ICONS = { bug: '🐛', maintenance: '🔧', evolution: '✨' };
 // Suivi de production : interventions (bug / maintenance / évolution) + notif e-mail à chaque étape.
 function BugsCard({ project, statutsBug, gravites, typesBug, recurrences }) {
     const bugs = project.bugs || [];
+    // Les tickets résolus (livré) / clôturés sortent de la liste « en cours »
+    // et sont repliés dans une section dédiée — toujours consultables.
+    const enCours = bugs.filter((b) => !['livre', 'ferme'].includes(b.statut));
+    const resolus = bugs.filter((b) => ['livre', 'ferme'].includes(b.statut));
     const clientEmail = project.prospect?.email;
     const add = useForm({
         type: 'bug', titre: '', description: '', gravite: 'majeur',
@@ -412,7 +416,9 @@ function BugsCard({ project, statutsBug, gravites, typesBug, recurrences }) {
         <div className="rounded-lg bg-white p-6 shadow">
             <div className="mb-3 flex items-center justify-between">
                 <h3 className="font-semibold text-gray-800">🔧 Suivi de production</h3>
-                <span className="text-xs text-gray-400">{bugs.length} ticket{bugs.length > 1 ? 's' : ''}</span>
+                <span className="text-xs text-gray-400">
+                    {enCours.length} en cours{resolus.length ? ` · ${resolus.length} résolu${resolus.length > 1 ? 's' : ''}` : ''}
+                </span>
             </div>
 
             {!clientEmail && (
@@ -422,9 +428,24 @@ function BugsCard({ project, statutsBug, gravites, typesBug, recurrences }) {
             )}
 
             <ul className="space-y-3">
-                {bugs.map((b) => <BugRow key={b.id} bug={b} statutsBug={statutsBug} gravites={gravites} typesBug={typesBug} />)}
-                {!bugs.length && <li className="text-sm text-gray-400">Aucune intervention.</li>}
+                {enCours.map((b) => <BugRow key={b.id} bug={b} statutsBug={statutsBug} gravites={gravites} typesBug={typesBug} />)}
+                {!enCours.length && (
+                    <li className="text-sm text-gray-400">
+                        {bugs.length ? 'Aucun ticket en cours 🎉' : 'Aucune intervention.'}
+                    </li>
+                )}
             </ul>
+
+            {resolus.length > 0 && (
+                <details className="mt-3 border-t border-gray-100 pt-3">
+                    <summary className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                        Tickets résolus / clôturés ({resolus.length})
+                    </summary>
+                    <ul className="mt-3 space-y-3 opacity-75">
+                        {resolus.map((b) => <BugRow key={b.id} bug={b} statutsBug={statutsBug} gravites={gravites} typesBug={typesBug} />)}
+                    </ul>
+                </details>
+            )}
 
             <form onSubmit={submit} className="mt-4 space-y-2 border-t border-gray-100 pt-4">
                 <div className="flex gap-2">
