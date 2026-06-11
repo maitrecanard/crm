@@ -59,13 +59,72 @@ class ProspectController extends Controller
     public function show(Prospect $prospect)
     {
         $prospect->load('interactions', 'tenders:id,prospect_id,acheteur,objet,date_limite,statut',
-            'projects:id,prospect_id,titre,statut');
+            'projects:id,prospect_id,titre,statut', 'facturesMensuelles');
 
         return Inertia::render('Prospects/Show', [
             'prospect'    => $prospect,
             'statuts'     => Prospect::STATUTS,
             'typeOptions' => \App\Models\Interaction::TYPES,
+            'facturation' => [
+                'active'     => $prospect->facturation_active,
+                'jour'       => $prospect->facturation_jour,
+                'debut'      => $prospect->facturation_debut?->toDateString(),
+                'montant_ht' => $prospect->facturation_montant_ht,
+                'libelle'    => $prospect->facturation_libelle,
+                'periodes'   => $prospect->apercuFacturation(),
+            ],
         ]);
+    }
+
+    /** Programme / met à jour la surveillance de facturation mensuelle du client. */
+    public function updateFacturation(Request $request, Prospect $prospect)
+    {
+        $data = $request->validate([
+            'facturation_active'     => ['required', 'boolean'],
+            'facturation_jour'       => ['required', 'integer', 'between:1,28'],
+            'facturation_debut'      => ['nullable', 'date'],
+            'facturation_montant_ht' => ['nullable', 'numeric', 'min:0'],
+            'facturation_libelle'    => ['nullable', 'string', 'max:255'],
+        ]);
+
+        // Démarrer la surveillance impose un mois de début.
+        if ($data['facturation_active'] && empty($data['facturation_debut'])) {
+            $data['facturation_debut'] = now()->startOfMonth()->toDateString();
+        }
+
+        $prospect->update($data);
+
+        return back()->with('success', 'Surveillance de facturation mise à jour.');
+    }
+
+    /** Saisit / met à jour la référence de facture d'un mois donné. */
+    public function upsertFacture(Request $request, Prospect $prospect)
+    {
+        $data = $request->validate([
+            'periode'    => ['required', 'date'],
+            'reference'  => ['nullable', 'string', 'max:255'],
+            'montant_ht' => ['nullable', 'numeric', 'min:0'],
+            'envoyee_le' => ['nullable', 'date'],
+        ]);
+
+        $periode = \Carbon\Carbon::parse($data['periode'])->startOfMonth()->toDateString();
+        $reference = $data['reference'] ?? null;
+
+        $prospect->facturesMensuelles()->updateOrCreate(
+            ['periode' => $periode],
+            [
+                'reference'  => $reference,
+                'montant_ht' => $data['montant_ht'] ?? $prospect->facturation_montant_ht,
+                // Saisir une référence vaut envoi : on date l'envoi si non précisé.
+                'envoyee_le' => filled($reference)
+                    ? ($data['envoyee_le'] ?? now()->toDateString())
+                    : null,
+            ]
+        );
+
+        return back()->with('success', filled($reference)
+            ? 'Référence de facture enregistrée.'
+            : 'Référence retirée pour ce mois.');
     }
 
     public function update(Request $request, Prospect $prospect)

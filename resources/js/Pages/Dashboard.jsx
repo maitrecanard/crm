@@ -23,7 +23,7 @@ function jdiff(dateStr) {
     return Math.round((d - t) / 86400000);
 }
 
-export default function Dashboard({ statutsProspect, prospectStats, kpis, relances, aoUrgents, aContacterEmail = [], avecEmailTotal = 0 }) {
+export default function Dashboard({ statutsProspect, prospectStats, kpis, relances, aoUrgents, aContacterEmail = [], avecEmailTotal = 0, facturesEnRetard = [] }) {
     const pipeOrder = ['a_contacter', 'contacte', 'relance', 'rdv', 'gagne', 'perdu'];
     const maxPipe = Math.max(1, ...pipeOrder.map((k) => prospectStats[k] || 0));
 
@@ -45,6 +45,27 @@ export default function Dashboard({ statutsProspect, prospectStats, kpis, relanc
                     <Kpi label="AO ouverts" value={kpis.ao_ouverts} accent="text-amber-600"
                         to={route('ao.index')} />
                 </div>
+
+                {/* Alerte : factures mensuelles non envoyées (référence manquante) */}
+                {facturesEnRetard.length > 0 && (
+                    <div className="rounded-lg border border-rose-200 bg-rose-50 p-4">
+                        <h3 className="mb-2 flex items-center gap-2 font-semibold text-rose-800">
+                            🧾 Factures mensuelles non envoyées
+                            <span className="rounded-full bg-rose-600 px-2 py-0.5 text-xs text-white">{facturesEnRetard.length}</span>
+                        </h3>
+                        <ul className="space-y-1">
+                            {facturesEnRetard.map((f, i) => (
+                                <li key={i} className="flex flex-wrap items-center gap-x-2 text-sm text-rose-900">
+                                    <Link href={route('prospects.show', f.prospect_id)}
+                                        className="font-medium underline hover:text-rose-700">{f.entreprise}</Link>
+                                    {f.libelle && <span className="text-rose-500">({f.libelle})</span>}
+                                    <span className="capitalize">— facture {f.mois_label}</span>
+                                    <span className="text-rose-500">échéance dépassée le {f.echeance}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 <div className="grid gap-6 lg:grid-cols-3">
                     {/* Pipeline */}

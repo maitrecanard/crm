@@ -53,6 +53,8 @@ class DashboardController extends Controller
                 ->orderBy('date_limite')
                 ->limit(8)
                 ->get(),
+            // Factures mensuelles en retard : mois sans référence passé l'échéance.
+            'facturesEnRetard' => Prospect::alertesFacturation(),
         ]);
     }
 }

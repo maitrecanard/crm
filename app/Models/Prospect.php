@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class Prospect extends Model
 {
@@ -11,6 +13,8 @@ class Prospect extends Model
         'cle', 'entreprise', 'localite', 'telephone', 'email', 'categorie',
         'secteur', 'signal_alerte', 'source_url', 'requete', 'source_fichier',
         'statut', 'prochaine_relance', 'notes', 'scenarios', 'est_client', 'client_depuis',
+        'facturation_active', 'facturation_jour', 'facturation_debut',
+        'facturation_montant_ht', 'facturation_libelle',
     ];
 
     protected $casts = [
@@ -18,6 +22,10 @@ class Prospect extends Model
         'scenarios' => 'array',
         'est_client' => 'boolean',
         'client_depuis' => 'date',
+        'facturation_active' => 'boolean',
+        'facturation_jour' => 'integer',
+        'facturation_debut' => 'date',
+        'facturation_montant_ht' => 'decimal:2',
     ];
 
     /** Étapes du pipeline commercial. */
@@ -44,5 +52,85 @@ class Prospect extends Model
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class)->latest();
+    }
+
+    public function facturesMensuelles(): HasMany
+    {
+        return $this->hasMany(FactureMensuelle::class)->orderByDesc('periode');
+    }
+
+    /** Liste des mois concernés, du 1er mois de facturation au mois courant. */
+    public function periodesAttendues(): array
+    {
+        if (! $this->facturation_active || ! $this->facturation_debut) {
+            return [];
+        }
+        $periodes = [];
+        $curseur = $this->facturation_debut->copy()->startOfMonth();
+        $fin = now()->startOfMonth();
+        while ($curseur->lessThanOrEqualTo($fin)) {
+            $periodes[] = $curseur->copy();
+            $curseur->addMonthNoOverflow();
+        }
+        return $periodes;
+    }
+
+    /**
+     * Aperçu de la facturation : un élément par mois attendu, avec sa référence
+     * (si saisie), son échéance et son statut (envoyee | a_venir | en_retard).
+     */
+    public function apercuFacturation(): array
+    {
+        $existantes = $this->relationLoaded('facturesMensuelles')
+            ? $this->facturesMensuelles
+            : $this->facturesMensuelles()->get();
+        $parPeriode = $existantes->keyBy(fn ($f) => $f->periode->format('Y-m'));
+
+        $apercu = [];
+        foreach ($this->periodesAttendues() as $periode) {
+            $cle = $periode->format('Y-m');
+            $f = $parPeriode->get($cle);
+            $echeance = FactureMensuelle::echeancePour($periode, $this->facturation_jour ?? 5);
+            $envoyee = $f && filled($f->reference);
+            $statut = $envoyee ? 'envoyee' : (now()->greaterThan($echeance) ? 'en_retard' : 'a_venir');
+            $apercu[] = [
+                'periode'     => $cle,
+                'mois_label'  => $periode->translatedFormat('F Y'),
+                'reference'   => $f?->reference,
+                'montant_ht'  => $f?->montant_ht ?? $this->facturation_montant_ht,
+                'envoyee_le'  => $f?->envoyee_le?->toDateString(),
+                'echeance'    => $echeance->toDateString(),
+                'statut'      => $statut,
+            ];
+        }
+        // Du mois le plus récent au plus ancien.
+        return array_reverse($apercu);
+    }
+
+    /** Mois en retard (non envoyés, échéance dépassée). */
+    public function facturesEnRetard(): array
+    {
+        return array_values(array_filter(
+            $this->apercuFacturation(),
+            fn ($m) => $m['statut'] === 'en_retard'
+        ));
+    }
+
+    /** Clients dont au moins une facture mensuelle est en retard (pour le dashboard). */
+    public static function alertesFacturation(): Collection
+    {
+        return static::where('facturation_active', true)
+            ->whereNotNull('facturation_debut')
+            ->with('facturesMensuelles')
+            ->get()
+            ->flatMap(function (Prospect $c) {
+                return collect($c->facturesEnRetard())->map(fn ($m) => [
+                    'prospect_id' => $c->id,
+                    'entreprise'  => $c->entreprise,
+                    'libelle'     => $c->facturation_libelle,
+                ] + $m);
+            })
+            ->sortBy('echeance')
+            ->values();
     }
 }
