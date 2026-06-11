@@ -66,7 +66,7 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
         { id: 'pilotage', label: 'Pilotage' },
         { id: 'taches', label: 'Tâches', badge: tasks.length },
         { id: 'env', label: 'Environnements' },
-        { id: 'prod', label: 'Production', badge: bugs.length },
+        { id: 'prod', label: 'Production', badge: bugsOuverts.length },
     ];
 
     return (
