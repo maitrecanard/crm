@@ -28,7 +28,7 @@ export default function Index({ clients, filters, total }) {
                     {clients.data.map((c) => (
                         <div key={c.id} className="rounded-lg bg-white p-4 shadow">
                             <div className="flex items-center justify-between">
-                                <Link href={route('prospects.show', c.id)} className="font-medium text-indigo-600 hover:underline">
+                                <Link href={route('clients.show', c.id)} className="font-medium text-indigo-600 hover:underline">
                                     {c.entreprise}
                                 </Link>
                                 <span className="text-xs text-gray-400">

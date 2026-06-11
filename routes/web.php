@@ -37,6 +37,19 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class])->group(
     Route::get('/clients', [ClientController::class, 'index'])->name('clients.index');
     Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
     Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
+    Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
+    // Besoins
+    Route::post('/clients/{client}/besoins', [ClientController::class, 'storeBesoin'])->name('besoins.store');
+    Route::put('/besoins/{besoin}', [ClientController::class, 'updateBesoin'])->name('besoins.update');
+    Route::delete('/besoins/{besoin}', [ClientController::class, 'destroyBesoin'])->name('besoins.destroy');
+    // Devis
+    Route::post('/clients/{client}/devis', [ClientController::class, 'storeDevis'])->name('devis.store');
+    Route::put('/devis/{devis}', [ClientController::class, 'updateDevis'])->name('devis.update');
+    Route::delete('/devis/{devis}', [ClientController::class, 'destroyDevis'])->name('devis.destroy');
+    // Factures ponctuelles
+    Route::post('/clients/{client}/factures', [ClientController::class, 'storeFacture'])->name('factures.store');
+    Route::put('/factures-ponctuelles/{facture}', [ClientController::class, 'updateFacture'])->name('factures.update');
+    Route::delete('/factures-ponctuelles/{facture}', [ClientController::class, 'destroyFacture'])->name('factures.destroy');
 
     Route::get('/projets', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('/projets/create', [ProjectController::class, 'create'])->name('projects.create');

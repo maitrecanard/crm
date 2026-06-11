@@ -59,6 +59,21 @@ class Prospect extends Model
         return $this->hasMany(FactureMensuelle::class)->orderByDesc('periode');
     }
 
+    public function besoins(): HasMany
+    {
+        return $this->hasMany(Besoin::class)->latest();
+    }
+
+    public function devis(): HasMany
+    {
+        return $this->hasMany(Devis::class)->orderByDesc('date_devis')->latest();
+    }
+
+    public function facturesPonctuelles(): HasMany
+    {
+        return $this->hasMany(FacturePonctuelle::class)->orderByDesc('date_facture')->latest();
+    }
+
     /** Liste des mois concernés, du 1er mois de facturation au mois courant. */
     public function periodesAttendues(): array
     {
