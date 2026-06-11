@@ -31,12 +31,20 @@ export default function Parametres({ contratConditions, conditionsDefaut }) {
                             className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
                             {form.processing ? 'Enregistrement…' : 'Enregistrer le modèle'}
                         </button>
+                        <a href={route('parametres.contrat-test')} target="_blank" rel="noreferrer"
+                            className="rounded-md bg-violet-100 px-4 py-2 text-sm font-medium text-violet-700 hover:bg-violet-200">
+                            🧪 Tester la génération PDF
+                        </a>
                         <button type="button"
                             onClick={() => form.setData('contrat_conditions', conditionsDefaut)}
                             className="text-xs text-gray-500 hover:text-gray-700">
                             Réinitialiser au modèle par défaut
                         </button>
                     </div>
+                    <p className="mt-2 text-xs text-gray-400">
+                        Le test génère un PDF de contrat d’exemple (client fictif) avec le modèle ci-dessus —
+                        pratique pour vérifier la génération, surtout après un déploiement.
+                    </p>
                 </div>
             </div>
         </AuthenticatedLayout>

@@ -62,6 +62,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class])->group(
     // Paramètres (modèle de conditions de contrat)
     Route::get('/parametres', [ParametresController::class, 'edit'])->name('parametres.edit');
     Route::put('/parametres', [ParametresController::class, 'update'])->name('parametres.update');
+    Route::get('/parametres/contrat-test.pdf', [ParametresController::class, 'testPdf'])->name('parametres.contrat-test');
 
     Route::get('/projets', [ProjectController::class, 'index'])->name('projects.index');
     Route::get('/projets/create', [ProjectController::class, 'create'])->name('projects.create');
