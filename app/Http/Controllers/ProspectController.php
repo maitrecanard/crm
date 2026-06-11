@@ -25,7 +25,17 @@ class ProspectController extends Controller
             ->when($filters['secteur'] ?? null, fn ($q, $v) => $q->where('secteur', $v))
             ->when($filters['localite'] ?? null, fn ($q, $v) => $q->where('localite', $v));
 
-        $prospects = $query->orderByRaw("CASE statut
+        // Priorité de contactabilité : on remonte d'abord les prospects que l'on
+        // peut réellement joindre — site web (à auditer), téléphone, email. Score
+        // = nombre de canaux disponibles (0 à 3), décroissant.
+        $contactScore = "(
+                (CASE WHEN source_url IS NOT NULL AND source_url <> '' THEN 1 ELSE 0 END)
+              + (CASE WHEN telephone IS NOT NULL AND telephone <> '' THEN 1 ELSE 0 END)
+              + (CASE WHEN email IS NOT NULL AND email <> '' THEN 1 ELSE 0 END)
+            )";
+
+        $prospects = $query->orderByRaw("$contactScore DESC")
+            ->orderByRaw("CASE statut
                 WHEN 'rdv' THEN 0 WHEN 'relance' THEN 1 WHEN 'contacte' THEN 2
                 WHEN 'a_contacter' THEN 3 WHEN 'gagne' THEN 4 ELSE 5 END")
             ->orderBy('entreprise')
