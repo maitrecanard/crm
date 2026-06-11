@@ -59,20 +59,12 @@ class ProspectController extends Controller
     public function show(Prospect $prospect)
     {
         $prospect->load('interactions', 'tenders:id,prospect_id,acheteur,objet,date_limite,statut',
-            'projects:id,prospect_id,titre,statut', 'facturesMensuelles');
+            'projects:id,prospect_id,titre,statut');
 
         return Inertia::render('Prospects/Show', [
             'prospect'    => $prospect,
             'statuts'     => Prospect::STATUTS,
             'typeOptions' => \App\Models\Interaction::TYPES,
-            'facturation' => [
-                'active'     => $prospect->facturation_active,
-                'jour'       => $prospect->facturation_jour,
-                'debut'      => $prospect->facturation_debut?->toDateString(),
-                'montant_ht' => $prospect->facturation_montant_ht,
-                'libelle'    => $prospect->facturation_libelle,
-                'periodes'   => $prospect->apercuFacturation(),
-            ],
         ]);
     }
 

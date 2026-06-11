@@ -1,9 +1,8 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import FacturationMensuelle from '@/Components/FacturationMensuelle';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
-export default function Show({ prospect, statuts, typeOptions, vendeur, facturation }) {
+export default function Show({ prospect, statuts, typeOptions, vendeur }) {
     const vd = vendeur || { societe: 'TechCare Solutions', prenom: '[TON PRÉNOM]', contact: '' };
     const form = useForm({
         statut: prospect.statut,
@@ -109,9 +108,6 @@ export default function Show({ prospect, statuts, typeOptions, vendeur, facturat
                                 className="mt-3 inline-block text-sm text-indigo-600 underline">Voir la source ↗</a>
                         )}
                     </div>
-
-                    {/* Surveillance de facturation mensuelle */}
-                    {facturation && <FacturationMensuelle prospect={prospect} facturation={facturation} />}
 
                     {/* Scénario d'appel téléphonique */}
                     <ScenarioAppel prospect={prospect} vd={vd} />
