@@ -18,6 +18,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class])->group(
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/prospects', [ProspectController::class, 'index'])->name('prospects.index');
+    Route::delete('/prospects/purge', [ProspectController::class, 'purge'])->name('prospects.purge');
     Route::get('/prospects/{prospect}', [ProspectController::class, 'show'])->name('prospects.show');
     Route::put('/prospects/{prospect}', [ProspectController::class, 'update'])->name('prospects.update');
     Route::put('/prospects/{prospect}/scenarios', [ProspectController::class, 'saveScenario'])->name('prospects.scenarios');

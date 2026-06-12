@@ -56,6 +56,17 @@ class ProspectController extends Controller
         ]);
     }
 
+    /** Purge : supprime tous les prospects jamais contactés (statut « à_contacter »).
+     *  Protège les clients et tout prospect ayant avancé dans le pipeline. */
+    public function purge()
+    {
+        $deleted = Prospect::where('statut', 'a_contacter')
+            ->where('est_client', false)
+            ->delete();
+
+        return back()->with('success', "$deleted prospect(s) non contacté(s) supprimé(s).");
+    }
+
     public function show(Prospect $prospect)
     {
         $prospect->load('interactions', 'tenders:id,prospect_id,acheteur,objet,date_limite,statut',

@@ -36,6 +36,16 @@ export default function Index({ prospects, filters, statuts, stats, sources, sec
         router.get(route('prospects.index'), next, { preserveState: true, preserveScroll: true, replace: true });
     };
 
+    const purge = () => {
+        const n = stats['a_contacter'] || 0;
+        if (!n) { alert('Aucun prospect non contacté à purger.'); return; }
+        if (confirm(`Supprimer définitivement les ${n} prospects « À contacter » (jamais contactés) ?\n\n`
+            + `Les clients et les prospects déjà contactés (Contacté, RDV, Gagné…) ne sont PAS touchés.\n`
+            + `Action irréversible.`)) {
+            router.delete(route('prospects.purge'), { preserveScroll: true });
+        }
+    };
+
     return (
         <AuthenticatedLayout header={<h2 className="text-xl font-semibold text-gray-800">Prospects</h2>}>
             <Head title="Prospects" />
@@ -53,6 +63,10 @@ export default function Index({ prospects, filters, statuts, stats, sources, sec
                             {label} <span className="font-semibold">{stats[key] || 0}</span>
                         </button>
                     ))}
+                    <button onClick={purge} title="Supprime les prospects jamais contactés (statut « À contacter »). Clients et prospects déjà contactés préservés."
+                        className="ml-auto rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100">
+                        🗑 Purger les non contactés <span className="font-semibold">({stats['a_contacter'] || 0})</span>
+                    </button>
                 </div>
 
                 {/* Filtres */}
