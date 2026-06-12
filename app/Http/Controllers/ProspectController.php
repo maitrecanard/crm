@@ -56,15 +56,15 @@ class ProspectController extends Controller
         ]);
     }
 
-    /** Purge : supprime tous les prospects jamais contactés (statut « à_contacter »).
+    /** Purge : supprime les prospects non contactés (« à_contacter ») et ignorés.
      *  Protège les clients et tout prospect ayant avancé dans le pipeline. */
     public function purge()
     {
-        $deleted = Prospect::where('statut', 'a_contacter')
+        $deleted = Prospect::whereIn('statut', ['a_contacter', 'ignore'])
             ->where('est_client', false)
             ->delete();
 
-        return back()->with('success', "$deleted prospect(s) non contacté(s) supprimé(s).");
+        return back()->with('success', "$deleted prospect(s) non contacté(s) / ignoré(s) supprimé(s).");
     }
 
     public function show(Prospect $prospect)
