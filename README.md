@@ -50,6 +50,37 @@ Puis ouvre **http://127.0.0.1:8000**.
 php artisan crm:import-ao      # réimporte les MAPA ouverts, marque les expirés
 ```
 
+## Module Partenaires
+Gestion des **apporteurs d'affaires / sous-traitants** : on leur rattache des
+projets, et ils peuvent **transmettre des tâches à réaliser** depuis leur propre
+espace. Onglet **Partenaires** (réservé aux comptes admin).
+
+- **Créer un partenaire** : nom, contact, e-mail, téléphone, notes. À la création,
+  un **compte de connexion** dédié est généré (rôle `partenaire`) et un **e-mail
+  d'activation** part automatiquement à son adresse.
+- **Activation du compte** : le partenaire reçoit un **lien signé** (valable 7 j) ;
+  il y **définit son mot de passe** (≥12 car., maj/min/chiffre/symbole), ce qui
+  active et connecte son compte. Bouton **« Renvoyer l'invitation »** si le lien
+  a expiré. Les comptes partenaire sont **dispensés de 2FA** (accès externe limité).
+- **Rattacher des projets** : depuis la fiche partenaire (rattacher / détacher un
+  projet existant) ou à la **création d'un projet** (sélecteur « Partenaire »).
+- **Portail partenaire** (`/portail`) : le partenaire connecté voit **ses projets**
+  et **transmet une tâche** (projet, intitulé, détails, échéance). La tâche arrive
+  dans le projet côté admin, marquée **source = partenaire**, et suit le cycle
+  habituel (à faire → en cours → fait).
+- **Rappels quotidiens** : tant qu'il reste des tâches partenaire non terminées,
+  un rappel part **par e-mail + notification in-app** (cloche dans la barre de nav).
+  Cadence : **7h en semaine, 10h le week-end**.
+
+```bash
+php artisan crm:rappels-partenaires            # rappel des tâches partenaire en attente
+php artisan crm:rappels-partenaires --dry-run  # simulation (n'envoie rien)
+```
+
+> Cloisonnement : un partenaire connecté est limité à son portail (toute URL du
+> back-office le **redirige** vers `/portail`) et ne peut transmettre une tâche que
+> sur **ses propres** projets ; un admin n'a pas accès au portail (403).
+
 ## (Ré)importer les prospects
 
 ```bash
@@ -74,3 +105,37 @@ après le refresh hebdo des appels d'offres.
 - Base : `database/database.sqlite` (locale). Pour passer à MySQL/MariaDB :
   ajuster `DB_*` dans `.env` puis `php artisan migrate:fresh && php artisan crm:import`.
 - Données perso : ce dossier `crm/` est **gitignoré** par le repo `search`.
+
+## Rapport — Fonctionnalité « Partenaires » (juin 2026)
+
+Fonctionnalité demandée : *créer un partenaire pour lui lier des projets, lui
+permettre de transmettre des tâches à réaliser, et recevoir des rappels quotidiens
+(7h en semaine, 10h le week-end)* ; le partenaire **valide son compte par e-mail**.
+
+### Livré
+1. **Partenaire + compte** : modèle `Partenaire`, CRUD admin, création d'un compte
+   `User` (rôle `partenaire`) et **e-mail d'activation** via lien signé (7 j) →
+   définition du mot de passe → connexion. Renvoi d'invitation possible.
+2. **Rattachement de projets** : `projects.partenaire_id` ; attache/détache depuis
+   la fiche partenaire + sélecteur à la création de projet.
+3. **Transmission de tâches** : portail partenaire (`/portail`) cloisonné ; tâches
+   `source=partenaire` rattachées au projet et au partenaire émetteur.
+4. **Rappels** : commande `crm:rappels-partenaires` (e-mail **+** notification
+   in-app), planifiée **7h en semaine / 10h le week-end**.
+5. **Contrôle d'accès** : middlewares `EnsureAdmin` / `EnsurePartenaire`, partenaires
+   dispensés de 2FA, badge de notifications dans la barre de navigation.
+
+### Cycle qualité
+- **Développement** : 5 migrations, modèles, 5 contrôleurs, 1 commande, 1 mailable,
+  1 notification, 2 middlewares, 5 pages React + nav/cloche.
+- **Vérification** : `php -l` sur tous les fichiers PHP, `npm run build` (assets OK).
+- **Tests unitaires/fonctionnels** : `tests/Feature/PartenairesTest.php` — **11 tests,
+  32 assertions** (création+invitation, activation signée, transmission de tâche,
+  cloisonnement portail/back-office, suppression en cascade du compte, rappels).
+- **Exécution** : migrations appliquées, `route:list` et `schedule:list` vérifiés
+  (`0 7 * * 1-5` et `0 10 * * 6,0`), commande lancée en `--dry-run`.
+- **Correction** : envoi d'e-mail rendu résilient (le partenaire est créé même si
+  le SMTP échoue → « Renvoyer l'invitation »).
+- **Non-régression** : suite complète **43 passés / 7 échecs pré-existants**
+  (tests d'auth/profil obsolètes : mots de passe faibles, inscription désactivée,
+  PATCH→PUT — sans rapport avec cette fonctionnalité).

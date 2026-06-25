@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProjectTask extends Model
 {
-    protected $fillable = ['project_id', 'titre', 'statut', 'echeance', 'ordre'];
+    protected $fillable = ['project_id', 'titre', 'description', 'statut', 'source', 'partenaire_id', 'echeance', 'ordre'];
 
     protected $casts = [
         'echeance' => 'date',
@@ -20,8 +20,24 @@ class ProjectTask extends Model
         'fait'     => 'Fait',
     ];
 
+    public const SOURCES = [
+        'interne'    => 'Interne',
+        'partenaire' => 'Partenaire',
+    ];
+
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function partenaire(): BelongsTo
+    {
+        return $this->belongsTo(Partenaire::class);
+    }
+
+    /** Tâches transmises par un partenaire et non terminées. */
+    public function scopeEnAttentePartenaire($query)
+    {
+        return $query->where('source', 'partenaire')->where('statut', '!=', 'fait');
     }
 }

@@ -5,6 +5,7 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -17,7 +18,7 @@ class User extends Authenticatable
     /**
      * @var list<string>
      */
-    protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar'];
+    protected $fillable = ['name', 'email', 'password', 'google_id', 'avatar', 'role', 'partenaire_id'];
 
     /**
      * @var list<string>
@@ -46,5 +47,23 @@ class User extends Authenticatable
     public function hasTwoFactorEnabled(): bool
     {
         return ! is_null($this->two_factor_secret) && ! is_null($this->two_factor_confirmed_at);
+    }
+
+    /** Partenaire rattaché (NULL pour les comptes admin). */
+    public function partenaire(): BelongsTo
+    {
+        return $this->belongsTo(Partenaire::class);
+    }
+
+    /** Compte partenaire (accès limité au portail). */
+    public function isPartenaire(): bool
+    {
+        return $this->role === 'partenaire';
+    }
+
+    /** Compte admin (accès complet au CRM). */
+    public function isAdmin(): bool
+    {
+        return $this->role !== 'partenaire';
     }
 }

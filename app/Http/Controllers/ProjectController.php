@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Partenaire;
 use App\Models\Project;
 use App\Models\ProjectTask;
 use App\Models\Prospect;
@@ -39,10 +40,11 @@ class ProjectController extends Controller
     public function create(Request $request)
     {
         return Inertia::render('Projects/Create', [
-            'clients'   => Prospect::where('est_client', true)
+            'clients'     => Prospect::where('est_client', true)
                 ->orderBy('entreprise')->get(['id', 'entreprise']),
-            'statuts'   => Project::STATUTS,
-            'preselect' => (int) $request->input('client') ?: null,
+            'partenaires' => Partenaire::orderBy('nom')->get(['id', 'nom']),
+            'statuts'     => Project::STATUTS,
+            'preselect'   => (int) $request->input('client') ?: null,
         ]);
     }
 
@@ -51,6 +53,7 @@ class ProjectController extends Controller
     {
         $data = $request->validate([
             'prospect_id'     => ['required', 'exists:prospects,id'],
+            'partenaire_id'   => ['nullable', 'exists:partenaires,id'],
             'titre'           => ['required', 'string', 'max:255'],
             'description'     => ['nullable', 'string'],
             'url_prod'        => ['nullable', 'string', 'max:255'],
@@ -105,6 +108,7 @@ class ProjectController extends Controller
     {
         $data = $request->validate([
             'titre'           => ['required', 'string', 'max:255'],
+            'partenaire_id'   => ['nullable', 'exists:partenaires,id'],
             'description'     => ['nullable', 'string'],
             'url_prod'        => ['nullable', 'string', 'max:255'],
             'url_preprod'     => ['nullable', 'string', 'max:255'],

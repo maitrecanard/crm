@@ -7,6 +7,10 @@ use App\Http\Controllers\ContratController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ParametresController;
 use App\Http\Controllers\InteractionController;
+use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PartenaireActivationController;
+use App\Http\Controllers\PartenaireController;
+use App\Http\Controllers\PortailController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProspectController;
@@ -14,7 +18,21 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
 
-Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class])->group(function () {
+// --- Activation d'un compte partenaire (lien signé reçu par e-mail) ---
+Route::middleware('signed')->group(function () {
+    Route::get('/partenaire/activation/{user}', [PartenaireActivationController::class, 'show'])
+        ->name('partenaire.activation');
+    Route::post('/partenaire/activation/{user}', [PartenaireActivationController::class, 'store'])
+        ->name('partenaire.activation.store');
+});
+
+// --- Portail partenaire (compte role=partenaire) ---
+Route::middleware(['auth', \App\Http\Middleware\EnsurePartenaire::class])->group(function () {
+    Route::get('/portail', [PortailController::class, 'index'])->name('portail.index');
+    Route::post('/portail/taches', [PortailController::class, 'storeTask'])->name('portail.tasks.store');
+});
+
+Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class, \App\Http\Middleware\EnsureAdmin::class])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/prospects', [ProspectController::class, 'index'])->name('prospects.index');
@@ -73,6 +91,20 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class])->group(
     Route::post('/projets/{project}/taches', [ProjectController::class, 'storeTask'])->name('tasks.store');
     Route::put('/taches/{task}', [ProjectController::class, 'updateTask'])->name('tasks.update');
     Route::delete('/taches/{task}', [ProjectController::class, 'destroyTask'])->name('tasks.destroy');
+
+    // --- Partenaires ---
+    Route::get('/partenaires', [PartenaireController::class, 'index'])->name('partenaires.index');
+    Route::get('/partenaires/create', [PartenaireController::class, 'create'])->name('partenaires.create');
+    Route::post('/partenaires', [PartenaireController::class, 'store'])->name('partenaires.store');
+    Route::get('/partenaires/{partenaire}', [PartenaireController::class, 'show'])->name('partenaires.show');
+    Route::put('/partenaires/{partenaire}', [PartenaireController::class, 'update'])->name('partenaires.update');
+    Route::delete('/partenaires/{partenaire}', [PartenaireController::class, 'destroy'])->name('partenaires.destroy');
+    Route::post('/partenaires/{partenaire}/invite', [PartenaireController::class, 'resendInvite'])->name('partenaires.invite');
+    Route::post('/partenaires/{partenaire}/projets', [PartenaireController::class, 'attachProject'])->name('partenaires.projets.attach');
+    Route::delete('/partenaires/{partenaire}/projets/{project}', [PartenaireController::class, 'detachProject'])->name('partenaires.projets.detach');
+
+    // Notifications in-app (badge de la barre de navigation).
+    Route::post('/notifications/read/{id?}', [NotificationController::class, 'markRead'])->name('notifications.read');
 
     // Suivi de production : bugs déclarés par le client.
     Route::post('/projets/{project}/bugs', [BugController::class, 'store'])->name('bugs.store');
