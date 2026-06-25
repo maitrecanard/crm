@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class Prospect extends Model
 {
@@ -52,6 +53,24 @@ class Prospect extends Model
     public function projects(): HasMany
     {
         return $this->hasMany(Project::class)->latest();
+    }
+
+    /** Tous les tickets d'assistance du client (à travers ses projets). */
+    public function supportTickets()
+    {
+        return Bug::whereIn('project_id', $this->projects()->select('id'));
+    }
+
+    /** (Re)génère le token d'assistance (150 caractères) et le persiste. */
+    public function genererTokenSupport(): string
+    {
+        do {
+            $token = Str::random(150);
+        } while (static::where('support_token', $token)->exists());
+
+        $this->forceFill(['support_token' => $token])->save();
+
+        return $token;
     }
 
     public function facturesMensuelles(): HasMany

@@ -91,6 +91,7 @@ class ProjectController extends Controller
             'tender:id,idweb,objet',
             'tasks',
             'bugs.messages',
+            'bugs.images:id,bug_id,nom',
         ]);
 
         return Inertia::render('Projects/Show', [

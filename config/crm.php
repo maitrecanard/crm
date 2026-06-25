@@ -56,4 +56,16 @@ return [
     'allow_registration'   => (bool) env('CRM_ALLOW_REGISTRATION', false),
     'allow_remote_migrate' => (bool) env('CRM_ALLOW_REMOTE_MIGRATE', true),
     'require_2fa'          => (bool) env('CRM_REQUIRE_2FA', true),
+
+    /*
+    | Assistance (API publique cloisonnée par token client de 150 caractères).
+    | Le site du client déclare ses incidents via /api/support/*.
+    | - enabled   : coupe l'API d'assistance si besoin.
+    | - max_images / max_image_mo : bornes des pièces jointes (images base64).
+    */
+    'support_api' => [
+        'enabled'      => (bool) env('CRM_SUPPORT_API', true),
+        'max_images'   => (int) env('CRM_SUPPORT_MAX_IMAGES', 4),
+        'max_image_mo' => (int) env('CRM_SUPPORT_MAX_IMAGE_MO', 5),
+    ],
 ];

@@ -84,6 +84,49 @@ php artisan crm:rappels-partenaires --dry-run  # simulation (n'envoie rien)
 > back-office le **redirige** vers `/portail`) et ne peut transmettre une tâche que
 > sur **ses propres** projets ; un admin n'a pas accès au portail (403).
 
+## Module Assistance (API client)
+Permet à un **client** de déclarer un incident **depuis son propre site**, sans
+aucun accès au CRM. Tout passe par une **API cloisonnée par token** (150 car.)
+qui identifie le client. Les tickets réutilisent le système de suivi existant
+(références `TIC-…`, statuts, e-mails de notification client).
+
+- **Token par client** : fiche client → carte **🛟 Assistance** → *Générer le
+  token*. Le token (150 car.) est à coller sur le site du client ; un bouton
+  *Régénérer* l'invalide et en émet un nouveau.
+- **Sites autorisés** : seuls les **sites déclarés dans les projets** du client
+  (`url_prod` / `url_preprod`) peuvent appeler l'API. Le site appelant (`Origin`,
+  `Referer`, ou en-tête `X-Support-Site` côté serveur) doit correspondre — il
+  détermine aussi **à quel projet** le ticket est rattaché.
+- **Déclaration d'incident** : `motif`, `titre`, `description` et jusqu'à
+  **4 images** (base64). Images stockées en **privé**, visibles uniquement par
+  l'admin (vignettes sur la fiche projet, onglet *Production*). Le client reçoit
+  un **accusé de réception** par e-mail.
+- **Suivi côté client** : l'API expose les **motifs**, la **liste des tickets** et
+  le **statut** de chacun (avec les messages publics) — le tout limité à ses
+  propres tickets.
+
+### API (consommée par le site du client)
+```
+GET  /api/support/motifs                 # motifs proposés
+POST /api/support/tickets                # déclarer un incident
+GET  /api/support/tickets                # ses tickets + statut
+GET  /api/support/tickets/{reference}    # statut détaillé d'un ticket
+```
+En-têtes requis : `X-Support-Token: <token 150 car.>` et un site autorisé
+(`Origin`/`Referer` en navigateur, ou `X-Support-Site` côté serveur).
+
+SDK Python (`crm_sdk.py`), pour une intégration serveur :
+```python
+from crm_sdk import SupportClient
+sup = SupportClient.from_env()                  # CRM_URL + CRM_SUPPORT_TOKEN + CRM_SUPPORT_SITE
+sup.create_ticket("panne", "Site KO", "Erreur 500", images=["capture.png"])
+sup.tickets()
+```
+
+> Cloisonnement : le client n'a **aucun compte CRM**. Le token l'identifie, et un
+> client ne voit/crée que **ses** tickets, uniquement depuis un **site déclaré**
+> dans ses projets.
+
 ## (Ré)importer les prospects
 
 ```bash
@@ -145,3 +188,41 @@ permettre de transmettre des tâches à réaliser, et recevoir des rappels quoti
 - **Non-régression** : suite complète **47 passés / 7 échecs pré-existants**
   (tests d'auth/profil obsolètes : mots de passe faibles, inscription désactivée,
   PATCH→PUT — sans rapport avec cette fonctionnalité).
+
+## Rapport — Module « Assistance » (API client, juin 2026)
+
+Fonctionnalité demandée : *les clients déclarent un incident depuis leur site
+(titre, description, 4 images max) ; motifs, tickets et statut récupérés via le
+SDK ; le tout cloisonné par token (150 car.) qui identifie le client. Le client
+n'a **aucun accès au CRM**, et seuls les **sites présents dans les projets**
+peuvent appeler l'API.*
+
+### Livré
+1. **Token client (150 car.)** : `prospects.support_token`, généré/régénéré depuis
+   la fiche client (carte Assistance + snippet d'intégration).
+2. **API cloisonnée** (`/api/support/*`) : middleware `ResolveSupportClient` qui
+   identifie le client par token **et** vérifie que le site appelant correspond à
+   l'URL d'un projet (`url_prod`/`url_preprod`) — ce site détermine le projet cible.
+3. **Déclaration d'incident** : réutilise le modèle `Bug` (`source=client_site`,
+   `motif`), accusé de réception e-mail, jusqu'à **4 images** base64 stockées en
+   **privé** (`bug_images`) et servies via une route admin authentifiée.
+4. **Lecture** : endpoints motifs / liste des tickets / statut, limités aux tickets
+   du client (rien d'interne exposé).
+5. **SDK** : classe `SupportClient` (Python) — `motifs()`, `create_ticket()`,
+   `tickets()`, `ticket()` ; images encodées en base64 depuis des fichiers.
+6. **Admin** : token + intégration sur la fiche client, vignettes des images sur la
+   fiche projet (onglet Production), badge « 🛟 Site client » sur les tickets.
+
+### Cycle qualité
+- **Développement** : 3 migrations, modèle `BugImage` (+ `Bug`/`Prospect` étendus),
+  1 middleware, 1 contrôleur API, 1 service images, 1 contrôleur d'images privées,
+  4 endpoints, SDK `SupportClient`, UI fiche client + fiche projet.
+- **Vérification** : `php -l` OK, `python3 -c "import crm_sdk"` OK, `npm run build` OK.
+- **Tests fonctionnels** : `tests/Feature/SupportApiTest.php` — **12 tests,
+  36 assertions** (auth token, motifs, création, images base64 stockées en privé,
+  limite de 4 images, base64 invalide / non-image sans orphelin, cloisonnement par
+  client, restriction par site → projet, messages publics uniquement).
+- **Exécution** : migrations appliquées, `route:list` vérifié.
+- **Correction** : restriction « site déclaré dans un projet » ajoutée (Origin /
+  Referer / `X-Support-Site`), nettoyage du ticket si une image échoue (pas d'orphelin).
+- **Non-régression** : suite complète **59 passés / 7 échecs pré-existants**.

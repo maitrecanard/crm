@@ -521,6 +521,11 @@ function BugRow({ bug, statutsBug, gravites, typesBug }) {
                 {bug.type !== 'maintenance' && (
                     <span className={`rounded px-2 py-0.5 text-xs font-medium ${GRAVITE_COLORS[bug.gravite]}`}>{gravites[bug.gravite]}</span>
                 )}
+                {bug.source === 'client_site' && (
+                    <span className="rounded bg-teal-100 px-2 py-0.5 text-xs font-medium text-teal-700" title="Déclaré par le client depuis son site">
+                        🛟 Site client
+                    </span>
+                )}
                 <span className="flex-1 text-sm font-medium text-gray-800">
                     {bug.reference && <span className="mr-1 font-mono text-xs text-gray-400">{bug.reference}</span>}
                     {bug.titre}
@@ -538,6 +543,17 @@ function BugRow({ bug, statutsBug, gravites, typesBug }) {
                 </p>
             )}
             {bug.description && <p className="mt-2 whitespace-pre-line text-xs text-gray-600">{bug.description}</p>}
+            {bug.images?.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                    {bug.images.map((img) => (
+                        <a key={img.id} href={route('bugs.images.show', img.id)} target="_blank" rel="noreferrer"
+                            className="block">
+                            <img src={route('bugs.images.show', img.id)} alt={img.nom || 'incident'}
+                                className="h-16 w-16 rounded-md border border-gray-200 object-cover hover:opacity-80" />
+                        </a>
+                    ))}
+                </div>
+            )}
             <div className="mt-2 flex items-center gap-2">
                 <span className="text-xs text-gray-400">Issue Git</span>
                 <input value={issue} onChange={(e) => setIssue(e.target.value)} onBlur={saveIssue}

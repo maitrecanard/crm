@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Bug extends Model
 {
     protected $fillable = [
-        'project_id', 'reference', 'type', 'titre', 'description', 'statut', 'gravite',
-        'recurrence', 'prochaine_echeance', 'issue_git', 'notifie_le', 'resolved_at',
+        'project_id', 'reference', 'type', 'source', 'motif', 'titre', 'description',
+        'statut', 'gravite', 'recurrence', 'prochaine_echeance', 'issue_git',
+        'notifie_le', 'resolved_at',
     ];
 
     protected static function booted(): void
@@ -34,6 +36,25 @@ class Bug extends Model
         'maintenance' => 'Maintenance périodique',
         'evolution'   => 'Évolution',
     ];
+
+    /**
+     * Motifs proposés au client lorsqu'il déclare un incident depuis son site.
+     * Chaque motif est mappé au `type` interne du ticket.
+     */
+    public const MOTIFS = [
+        'panne'     => ['label' => 'Panne / site inaccessible', 'type' => 'bug'],
+        'anomalie'  => ['label' => 'Anomalie / comportement inattendu', 'type' => 'bug'],
+        'affichage' => ['label' => 'Problème d’affichage', 'type' => 'bug'],
+        'evolution' => ['label' => 'Demande d’évolution', 'type' => 'evolution'],
+        'question'  => ['label' => 'Question / assistance', 'type' => 'bug'],
+        'autre'     => ['label' => 'Autre', 'type' => 'bug'],
+    ];
+
+    /** Type interne déduit d'un motif client (défaut : bug). */
+    public static function typePourMotif(?string $motif): string
+    {
+        return self::MOTIFS[$motif]['type'] ?? 'bug';
+    }
 
     /** Étapes (chaque passage notifie le client). Libellés génériques dans l'app. */
     public const STATUTS = [
@@ -115,5 +136,16 @@ class Bug extends Model
     public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(BugMessage::class)->orderBy('created_at');
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(BugImage::class)->orderBy('id');
+    }
+
+    /** Libellé lisible du motif client (ou null si interne). */
+    public function motifLabel(): ?string
+    {
+        return $this->motif ? (self::MOTIFS[$this->motif]['label'] ?? $this->motif) : null;
     }
 }

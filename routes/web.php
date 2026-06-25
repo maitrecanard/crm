@@ -63,6 +63,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class, \App\Htt
     Route::get('/clients/create', [ClientController::class, 'create'])->name('clients.create');
     Route::post('/clients', [ClientController::class, 'store'])->name('clients.store');
     Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
+    Route::put('/clients/{client}/support-token', [ClientController::class, 'regenerateSupportToken'])->name('clients.support-token');
     // Besoins
     Route::post('/clients/{client}/besoins', [ClientController::class, 'storeBesoin'])->name('besoins.store');
     Route::put('/besoins/{besoin}', [ClientController::class, 'updateBesoin'])->name('besoins.update');
@@ -112,6 +113,8 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class, \App\Htt
     Route::put('/bugs/{bug}', [BugController::class, 'update'])->name('bugs.update');
     Route::post('/bugs/{bug}/messages', [BugController::class, 'storeMessage'])->name('bugs.messages.store');
     Route::delete('/bugs/{bug}', [BugController::class, 'destroy'])->name('bugs.destroy');
+    // Images d'incident (assistance) servies depuis le disque privé.
+    Route::get('/bugs/images/{image}', [\App\Http\Controllers\SupportImageController::class, 'show'])->name('bugs.images.show');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
