@@ -151,9 +151,30 @@ class ProjectController extends Controller
             'echeance' => ['sometimes', 'nullable', 'date'],
         ]);
 
+        $ancienStatut = $task->statut;
         $task->update($data);
 
+        $this->notifierPartenaire($task, $ancienStatut);
+
         return back(fallback: route('projects.show', $task->project_id));
+    }
+
+    /**
+     * Prévient le partenaire émetteur quand sa tâche passe en « en cours » (prise
+     * en charge) ou « fait » (terminée). Uniquement sur transition réelle de statut.
+     */
+    private function notifierPartenaire(ProjectTask $task, string $ancienStatut): void
+    {
+        if ($task->source !== 'partenaire'
+            || $task->statut === $ancienStatut
+            || ! in_array($task->statut, ['en_cours', 'fait'], true)) {
+            return;
+        }
+
+        $task->loadMissing('partenaire.user', 'project:id,titre');
+        $task->partenaire?->user?->notify(
+            new \App\Notifications\TacheStatutPartenaire($task, $task->statut)
+        );
     }
 
     public function destroyTask(ProjectTask $task)

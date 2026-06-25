@@ -7,6 +7,7 @@ use App\Models\ProjectTask;
 use App\Models\Prospect;
 use App\Models\User;
 use App\Notifications\RappelTachesPartenaire;
+use App\Notifications\TacheStatutPartenaire;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
@@ -185,6 +186,71 @@ it('aucun rappel envoyé quand il n’y a pas de tâche partenaire en attente', 
     admin();
 
     $this->artisan('crm:rappels-partenaires')->assertSuccessful();
+
+    Notification::assertNothingSent();
+});
+
+/** Crée [partenaire, user partenaire, tâche transmise] prête à changer de statut. */
+function tachePartenaire(string $statut = 'a_faire'): ProjectTask
+{
+    $partenaire = Partenaire::create(['nom' => 'A', 'email' => 'a@a.fr', 'actif' => true]);
+    User::create([
+        'name' => 'A', 'email' => 'a@a.fr', 'password' => bcrypt('x'),
+        'role' => 'partenaire', 'partenaire_id' => $partenaire->id, 'email_verified_at' => now(),
+    ]);
+    $project = Project::create([
+        'prospect_id' => clientProspect()->id, 'partenaire_id' => $partenaire->id,
+        'titre' => 'P', 'statut' => 'en_cours',
+    ]);
+
+    return $project->tasks()->create([
+        'titre' => 'Tâche X', 'source' => 'partenaire', 'partenaire_id' => $partenaire->id, 'statut' => $statut,
+    ]);
+}
+
+it('prendre en charge une tâche partenaire notifie le partenaire', function () {
+    Notification::fake();
+    $task = tachePartenaire('a_faire');
+
+    $this->actingAs(admin())->put(route('tasks.update', $task), ['statut' => 'en_cours'])->assertRedirect();
+
+    Notification::assertSentTo(
+        $task->partenaire->user,
+        TacheStatutPartenaire::class,
+        fn ($n) => $n->statut === 'en_cours'
+    );
+});
+
+it('terminer une tâche partenaire notifie le partenaire', function () {
+    Notification::fake();
+    $task = tachePartenaire('en_cours');
+
+    $this->actingAs(admin())->put(route('tasks.update', $task), ['statut' => 'fait'])->assertRedirect();
+
+    Notification::assertSentTo(
+        $task->partenaire->user,
+        TacheStatutPartenaire::class,
+        fn ($n) => $n->statut === 'fait'
+    );
+});
+
+it('ne notifie pas si le statut ne change pas', function () {
+    Notification::fake();
+    $task = tachePartenaire('en_cours');
+
+    $this->actingAs(admin())->put(route('tasks.update', $task), ['statut' => 'en_cours'])->assertRedirect();
+
+    Notification::assertNothingSent();
+});
+
+it('ne notifie pas pour une tâche interne', function () {
+    Notification::fake();
+    $project = Project::create([
+        'prospect_id' => clientProspect()->id, 'titre' => 'P', 'statut' => 'en_cours',
+    ]);
+    $task = $project->tasks()->create(['titre' => 'Interne', 'source' => 'interne', 'statut' => 'a_faire']);
+
+    $this->actingAs(admin())->put(route('tasks.update', $task), ['statut' => 'en_cours'])->assertRedirect();
 
     Notification::assertNothingSent();
 });

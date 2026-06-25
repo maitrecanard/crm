@@ -87,9 +87,8 @@ export default function AuthenticatedLayout({ header, children }) {
                         </div>
 
                         <div className="hidden sm:ms-6 sm:flex sm:items-center">
-                            {!isPartenaire && (
-                                <div className="relative me-3">
-                                    <Dropdown>
+                            <div className="relative me-3">
+                                <Dropdown>
                                         <Dropdown.Trigger>
                                             <button type="button"
                                                 className="relative inline-flex items-center rounded-md p-2 text-gray-500 hover:text-gray-700 focus:outline-none">
@@ -129,7 +128,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                         </Dropdown.Content>
                                     </Dropdown>
                                 </div>
-                            )}
                             <div className="relative ms-3">
                                 <Dropdown>
                                     <Dropdown.Trigger>

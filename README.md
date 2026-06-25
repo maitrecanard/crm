@@ -71,6 +71,9 @@ espace. Onglet **Partenaires** (réservé aux comptes admin).
 - **Rappels quotidiens** : tant qu'il reste des tâches partenaire non terminées,
   un rappel part **par e-mail + notification in-app** (cloche dans la barre de nav).
   Cadence : **7h en semaine, 10h le week-end**.
+- **Suivi côté partenaire** : quand tu **prends en charge** une tâche transmise
+  (statut → *en cours*) ou que tu la **termines** (statut → *fait*), le partenaire
+  est **prévenu automatiquement** (e-mail + notification in-app sur son portail).
 
 ```bash
 php artisan crm:rappels-partenaires            # rappel des tâches partenaire en attente
@@ -122,20 +125,23 @@ permettre de transmettre des tâches à réaliser, et recevoir des rappels quoti
    `source=partenaire` rattachées au projet et au partenaire émetteur.
 4. **Rappels** : commande `crm:rappels-partenaires` (e-mail **+** notification
    in-app), planifiée **7h en semaine / 10h le week-end**.
-5. **Contrôle d'accès** : middlewares `EnsureAdmin` / `EnsurePartenaire`, partenaires
-   dispensés de 2FA, badge de notifications dans la barre de navigation.
+5. **Suivi du partenaire** : à la **prise en charge** (en cours) et à la **fin**
+   (fait) d'une tâche transmise, le partenaire est notifié (e-mail + in-app).
+6. **Contrôle d'accès** : middlewares `EnsureAdmin` / `EnsurePartenaire`, partenaires
+   dispensés de 2FA, badge de notifications dans la barre de navigation (admin + partenaire).
 
 ### Cycle qualité
 - **Développement** : 5 migrations, modèles, 5 contrôleurs, 1 commande, 1 mailable,
   1 notification, 2 middlewares, 5 pages React + nav/cloche.
 - **Vérification** : `php -l` sur tous les fichiers PHP, `npm run build` (assets OK).
-- **Tests unitaires/fonctionnels** : `tests/Feature/PartenairesTest.php` — **11 tests,
-  32 assertions** (création+invitation, activation signée, transmission de tâche,
-  cloisonnement portail/back-office, suppression en cascade du compte, rappels).
+- **Tests unitaires/fonctionnels** : `tests/Feature/PartenairesTest.php` — **15 tests,
+  40 assertions** (création+invitation, activation signée, transmission de tâche,
+  cloisonnement portail/back-office, suppression en cascade du compte, rappels,
+  notification du partenaire à la prise en charge et à la fin d'une tâche).
 - **Exécution** : migrations appliquées, `route:list` et `schedule:list` vérifiés
   (`0 7 * * 1-5` et `0 10 * * 6,0`), commande lancée en `--dry-run`.
 - **Correction** : envoi d'e-mail rendu résilient (le partenaire est créé même si
   le SMTP échoue → « Renvoyer l'invitation »).
-- **Non-régression** : suite complète **43 passés / 7 échecs pré-existants**
+- **Non-régression** : suite complète **47 passés / 7 échecs pré-existants**
   (tests d'auth/profil obsolètes : mots de passe faibles, inscription désactivée,
   PATCH→PUT — sans rapport avec cette fonctionnalité).

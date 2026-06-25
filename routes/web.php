@@ -32,6 +32,10 @@ Route::middleware(['auth', \App\Http\Middleware\EnsurePartenaire::class])->group
     Route::post('/portail/taches', [PortailController::class, 'storeTask'])->name('portail.tasks.store');
 });
 
+// Notifications in-app (badge) — accessible aux admins comme aux partenaires.
+Route::post('/notifications/read/{id?}', [NotificationController::class, 'markRead'])
+    ->middleware('auth')->name('notifications.read');
+
 Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class, \App\Http\Middleware\EnsureAdmin::class])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
@@ -102,9 +106,6 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class, \App\Htt
     Route::post('/partenaires/{partenaire}/invite', [PartenaireController::class, 'resendInvite'])->name('partenaires.invite');
     Route::post('/partenaires/{partenaire}/projets', [PartenaireController::class, 'attachProject'])->name('partenaires.projets.attach');
     Route::delete('/partenaires/{partenaire}/projets/{project}', [PartenaireController::class, 'detachProject'])->name('partenaires.projets.detach');
-
-    // Notifications in-app (badge de la barre de navigation).
-    Route::post('/notifications/read/{id?}', [NotificationController::class, 'markRead'])->name('notifications.read');
 
     // Suivi de production : bugs déclarés par le client.
     Route::post('/projets/{project}/bugs', [BugController::class, 'store'])->name('bugs.store');

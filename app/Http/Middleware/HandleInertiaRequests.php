@@ -41,8 +41,8 @@ class HandleInertiaRequests extends Middleware
                 'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),
             ],
-            // Notifications in-app (badge) — uniquement pour les comptes admin.
-            'notifications' => fn () => ($user && $user->isAdmin())
+            // Notifications in-app (badge) — admins comme partenaires.
+            'notifications' => fn () => $user
                 ? $user->unreadNotifications()->latest()->take(10)->get()
                     ->map(fn ($n) => [
                         'id'         => $n->id,
