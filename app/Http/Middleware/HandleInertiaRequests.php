@@ -29,16 +29,28 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
             'vendeur' => config('crm.vendeur'),
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error'   => fn () => $request->session()->get('error'),
             ],
+            // Notifications in-app (badge) — admins comme partenaires.
+            'notifications' => fn () => $user
+                ? $user->unreadNotifications()->latest()->take(10)->get()
+                    ->map(fn ($n) => [
+                        'id'         => $n->id,
+                        'titre'      => $n->data['titre'] ?? 'Notification',
+                        'url'        => $n->data['url'] ?? null,
+                        'created_at' => $n->created_at->toIso8601String(),
+                    ])
+                : [],
         ];
     }
 }

@@ -2,16 +2,20 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import NavLink from '@/Components/NavLink';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
-import { Link, usePage } from '@inertiajs/react';
+import { Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 
 export default function AuthenticatedLayout({ header, children }) {
     const page = usePage().props;
     const user = page.auth.user;
     const flash = page.flash || {};
+    const isPartenaire = user.role === 'partenaire';
+    const notifications = page.notifications || [];
 
     const [showingNavigationDropdown, setShowingNavigationDropdown] =
         useState(false);
+
+    const markAllRead = () => router.post(route('notifications.read'), {}, { preserveScroll: true });
 
     return (
         <div className="min-h-screen bg-gray-100">
@@ -26,46 +30,104 @@ export default function AuthenticatedLayout({ header, children }) {
                             </div>
 
                             <div className="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
-                                <NavLink
-                                    href={route('dashboard')}
-                                    active={route().current('dashboard')}
-                                >
-                                    Tableau de bord
-                                </NavLink>
-                                <NavLink
-                                    href={route('prospects.index')}
-                                    active={route().current('prospects.*')}
-                                >
-                                    Prospects
-                                </NavLink>
-                                <NavLink
-                                    href={route('ao.index')}
-                                    active={route().current('ao.*')}
-                                >
-                                    Appels d’offres
-                                </NavLink>
-                                <NavLink
-                                    href={route('clients.index')}
-                                    active={route().current('clients.*')}
-                                >
-                                    Clients
-                                </NavLink>
-                                <NavLink
-                                    href={route('projects.index')}
-                                    active={route().current('projects.*')}
-                                >
-                                    Projets
-                                </NavLink>
-                                <NavLink
-                                    href={route('parametres.edit')}
-                                    active={route().current('parametres.*')}
-                                >
-                                    Paramètres
-                                </NavLink>
+                                {isPartenaire ? (
+                                    <NavLink
+                                        href={route('portail.index')}
+                                        active={route().current('portail.*')}
+                                    >
+                                        Mon espace
+                                    </NavLink>
+                                ) : (
+                                    <>
+                                        <NavLink
+                                            href={route('dashboard')}
+                                            active={route().current('dashboard')}
+                                        >
+                                            Tableau de bord
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('prospects.index')}
+                                            active={route().current('prospects.*')}
+                                        >
+                                            Prospects
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('ao.index')}
+                                            active={route().current('ao.*')}
+                                        >
+                                            Appels d’offres
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('clients.index')}
+                                            active={route().current('clients.*')}
+                                        >
+                                            Clients
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('projects.index')}
+                                            active={route().current('projects.*')}
+                                        >
+                                            Projets
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('partenaires.index')}
+                                            active={route().current('partenaires.*')}
+                                        >
+                                            Partenaires
+                                        </NavLink>
+                                        <NavLink
+                                            href={route('parametres.edit')}
+                                            active={route().current('parametres.*')}
+                                        >
+                                            Paramètres
+                                        </NavLink>
+                                    </>
+                                )}
                             </div>
                         </div>
 
                         <div className="hidden sm:ms-6 sm:flex sm:items-center">
+                            <div className="relative me-3">
+                                <Dropdown>
+                                        <Dropdown.Trigger>
+                                            <button type="button"
+                                                className="relative inline-flex items-center rounded-md p-2 text-gray-500 hover:text-gray-700 focus:outline-none">
+                                                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                                        d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                                </svg>
+                                                {notifications.length > 0 && (
+                                                    <span className="absolute right-1 top-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                                                        {notifications.length}
+                                                    </span>
+                                                )}
+                                            </button>
+                                        </Dropdown.Trigger>
+                                        <Dropdown.Content width="48">
+                                            <div className="px-4 py-2 text-xs font-semibold uppercase text-gray-400">
+                                                Notifications
+                                            </div>
+                                            {notifications.length ? (
+                                                <>
+                                                    {notifications.map((n) => (
+                                                        <Link key={n.id} href={n.url || '#'}
+                                                            className="block border-t border-gray-100 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                                            {n.titre}
+                                                        </Link>
+                                                    ))}
+                                                    <button onClick={markAllRead}
+                                                        className="block w-full border-t border-gray-100 px-4 py-2 text-left text-xs text-indigo-600 hover:bg-gray-50">
+                                                        Tout marquer comme lu
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <div className="border-t border-gray-100 px-4 py-3 text-sm text-gray-400">
+                                                    Aucune notification.
+                                                </div>
+                                            )}
+                                        </Dropdown.Content>
+                                    </Dropdown>
+                                </div>
                             <div className="relative ms-3">
                                 <Dropdown>
                                     <Dropdown.Trigger>
@@ -160,36 +222,53 @@ export default function AuthenticatedLayout({ header, children }) {
                     }
                 >
                     <div className="space-y-1 pb-3 pt-2">
-                        <ResponsiveNavLink
-                            href={route('dashboard')}
-                            active={route().current('dashboard')}
-                        >
-                            Tableau de bord
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('prospects.index')}
-                            active={route().current('prospects.*')}
-                        >
-                            Prospects
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('ao.index')}
-                            active={route().current('ao.*')}
-                        >
-                            Appels d’offres
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('clients.index')}
-                            active={route().current('clients.*')}
-                        >
-                            Clients
-                        </ResponsiveNavLink>
-                        <ResponsiveNavLink
-                            href={route('projects.index')}
-                            active={route().current('projects.*')}
-                        >
-                            Projets
-                        </ResponsiveNavLink>
+                        {isPartenaire ? (
+                            <ResponsiveNavLink
+                                href={route('portail.index')}
+                                active={route().current('portail.*')}
+                            >
+                                Mon espace
+                            </ResponsiveNavLink>
+                        ) : (
+                            <>
+                                <ResponsiveNavLink
+                                    href={route('dashboard')}
+                                    active={route().current('dashboard')}
+                                >
+                                    Tableau de bord
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('prospects.index')}
+                                    active={route().current('prospects.*')}
+                                >
+                                    Prospects
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('ao.index')}
+                                    active={route().current('ao.*')}
+                                >
+                                    Appels d’offres
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('clients.index')}
+                                    active={route().current('clients.*')}
+                                >
+                                    Clients
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('projects.index')}
+                                    active={route().current('projects.*')}
+                                >
+                                    Projets
+                                </ResponsiveNavLink>
+                                <ResponsiveNavLink
+                                    href={route('partenaires.index')}
+                                    active={route().current('partenaires.*')}
+                                >
+                                    Partenaires
+                                </ResponsiveNavLink>
+                            </>
+                        )}
                     </div>
 
                     <div className="border-t border-gray-200 pb-1 pt-4">

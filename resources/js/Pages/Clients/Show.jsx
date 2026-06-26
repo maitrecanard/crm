@@ -18,7 +18,7 @@ const FACT_BADGE = {
     payee: 'bg-green-100 text-green-700', impayee: 'bg-rose-100 text-rose-700',
 };
 
-export default function ClientShow({ client, besoins, devis, facturesPonctuelles, facturation,
+export default function ClientShow({ client, support, besoins, devis, facturesPonctuelles, facturation,
     contrats, emailGenere, statutsBesoin, statutsDevis, statutsFacture, statutsContrat }) {
     return (
         <AuthenticatedLayout header={
@@ -62,6 +62,8 @@ export default function ClientShow({ client, besoins, devis, facturesPonctuelles
                         </div>
                     </div>
                 )}
+
+                <AssistanceCard client={client} support={support} />
 
                 <BesoinsCard client={client} besoins={besoins} statuts={statutsBesoin} />
                 <DevisCard client={client} devis={devis} statuts={statutsDevis} />
@@ -110,6 +112,68 @@ function InfosClient({ client }) {
                 className="mt-3 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
                 {form.processing ? 'Enregistrement…' : 'Enregistrer'}
             </button>
+        </div>
+    );
+}
+
+function AssistanceCard({ client, support }) {
+    const [copied, setCopied] = useState(false);
+    const token = support?.token;
+    const endpoint = support?.endpoint;
+
+    const regenerate = () =>
+        confirm(token
+            ? 'Régénérer le token invalidera l’ancien sur le site du client. Continuer ?'
+            : 'Générer un token d’assistance pour ce client ?')
+        && router.put(route('clients.support-token', client.id), {}, { preserveScroll: true });
+
+    const copy = () => {
+        navigator.clipboard?.writeText(token);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+    };
+
+    const snippet = `POST ${endpoint}/tickets
+X-Support-Token: ${token || '<TOKEN>'}
+Content-Type: application/json
+
+{ "motif": "panne", "titre": "…", "description": "…", "images": [] }`;
+
+    return (
+        <div className="rounded-lg bg-white p-6 shadow">
+            <div className="mb-3 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-800">🛟 Assistance (site du client)</h3>
+                <button onClick={regenerate}
+                    className="rounded-md bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-700 hover:bg-indigo-100">
+                    {token ? 'Régénérer le token' : 'Générer le token'}
+                </button>
+            </div>
+
+            {token ? (
+                <div className="space-y-3">
+                    <p className="text-sm text-gray-600">
+                        Token d’identification (150 car.) à intégrer sur le site du client pour
+                        déclarer des incidents. Il cloisonne ses tickets.
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <code className="block w-full truncate rounded-md bg-gray-50 px-3 py-2 font-mono text-xs text-gray-700">
+                            {token}
+                        </code>
+                        <button onClick={copy} className="shrink-0 rounded-md border border-gray-300 px-3 py-2 text-xs hover:bg-gray-50">
+                            {copied ? 'Copié ✓' : 'Copier'}
+                        </button>
+                    </div>
+                    <details className="text-sm text-gray-600">
+                        <summary className="cursor-pointer text-indigo-600">Exemple d’intégration</summary>
+                        <pre className="mt-2 overflow-x-auto rounded-md bg-gray-900 p-3 text-xs text-gray-100">{snippet}</pre>
+                    </details>
+                </div>
+            ) : (
+                <p className="text-sm text-gray-400">
+                    Aucun token généré. Cliquez sur « Générer le token » pour activer l’assistance
+                    depuis le site de ce client.
+                </p>
+            )}
         </div>
     );
 }

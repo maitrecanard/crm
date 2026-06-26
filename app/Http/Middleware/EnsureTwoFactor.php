@@ -18,6 +18,7 @@ class EnsureTwoFactor
         $user = $request->user();
 
         if (config('crm.require_2fa') && $user
+            && ! $user->isPartenaire()           // comptes partenaire externes : 2FA non imposée
             && ! $user->hasTwoFactorEnabled()
             && empty($user->google_id)
             && ! $request->routeIs('profile.*', 'two-factor.*', 'logout', 'password.confirm', 'password.update', 'verification.*')

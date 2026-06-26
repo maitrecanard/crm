@@ -1,9 +1,10 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 
-export default function Create({ clients, statuts, preselect }) {
+export default function Create({ clients, partenaires = [], statuts, preselect }) {
     const form = useForm({
         prospect_id: preselect || (clients[0]?.id ?? ''),
+        partenaire_id: '',
         titre: '', description: '', statut: 'cadrage', budget: '',
         date_debut: '', date_fin_prevue: '',
         url_prod: '', url_preprod: '', repo_git: '', hebergeur: '',
@@ -34,6 +35,16 @@ export default function Create({ clients, statuts, preselect }) {
                             </select>
                             {form.errors.prospect_id && <p className="mt-1 text-xs text-red-600">{form.errors.prospect_id}</p>}
                         </div>
+                        {partenaires.length > 0 && (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Partenaire (apporteur / sous-traitance)</label>
+                                <select value={form.data.partenaire_id} onChange={(e) => form.setData('partenaire_id', e.target.value)}
+                                    className="mt-1 w-full rounded-md border-gray-300 text-sm">
+                                    <option value="">— Aucun —</option>
+                                    {partenaires.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+                                </select>
+                            </div>
+                        )}
                         <div>
                             <label className="block text-sm font-medium text-gray-700">Intitulé du projet *</label>
                             <input value={form.data.titre} onChange={(e) => form.setData('titre', e.target.value)}

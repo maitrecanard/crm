@@ -3,12 +3,23 @@
 use App\Http\Controllers\Api\AuthApiController;
 use App\Http\Controllers\Api\MaintenanceApiController;
 use App\Http\Controllers\Api\ProspectApiController;
+use App\Http\Controllers\Api\SupportApiController;
 use App\Http\Controllers\Api\TenderApiController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Authentification mobile : échange identifiants -> token.
 Route::post('/login', [AuthApiController::class, 'login'])->middleware('throttle:6,1');
+
+// --- API d'assistance (site du client) : cloisonnée par token client (150 car.) ---
+Route::prefix('support')
+    ->middleware([\App\Http\Middleware\ResolveSupportClient::class, 'throttle:60,1'])
+    ->group(function () {
+        Route::get('/motifs', [SupportApiController::class, 'motifs']);
+        Route::get('/tickets', [SupportApiController::class, 'index']);
+        Route::post('/tickets', [SupportApiController::class, 'store']);
+        Route::get('/tickets/{reference}', [SupportApiController::class, 'show']);
+    });
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', fn (Request $request) => $request->user());

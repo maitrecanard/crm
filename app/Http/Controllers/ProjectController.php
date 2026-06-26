@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Partenaire;
 use App\Models\Project;
 use App\Models\ProjectTask;
 use App\Models\Prospect;
@@ -39,10 +40,11 @@ class ProjectController extends Controller
     public function create(Request $request)
     {
         return Inertia::render('Projects/Create', [
-            'clients'   => Prospect::where('est_client', true)
+            'clients'     => Prospect::where('est_client', true)
                 ->orderBy('entreprise')->get(['id', 'entreprise']),
-            'statuts'   => Project::STATUTS,
-            'preselect' => (int) $request->input('client') ?: null,
+            'partenaires' => Partenaire::orderBy('nom')->get(['id', 'nom']),
+            'statuts'     => Project::STATUTS,
+            'preselect'   => (int) $request->input('client') ?: null,
         ]);
     }
 
@@ -51,6 +53,7 @@ class ProjectController extends Controller
     {
         $data = $request->validate([
             'prospect_id'     => ['required', 'exists:prospects,id'],
+            'partenaire_id'   => ['nullable', 'exists:partenaires,id'],
             'titre'           => ['required', 'string', 'max:255'],
             'description'     => ['nullable', 'string'],
             'url_prod'        => ['nullable', 'string', 'max:255'],
@@ -88,6 +91,7 @@ class ProjectController extends Controller
             'tender:id,idweb,objet',
             'tasks',
             'bugs.messages',
+            'bugs.images:id,bug_id,nom',
         ]);
 
         return Inertia::render('Projects/Show', [
@@ -105,6 +109,7 @@ class ProjectController extends Controller
     {
         $data = $request->validate([
             'titre'           => ['required', 'string', 'max:255'],
+            'partenaire_id'   => ['nullable', 'exists:partenaires,id'],
             'description'     => ['nullable', 'string'],
             'url_prod'        => ['nullable', 'string', 'max:255'],
             'url_preprod'     => ['nullable', 'string', 'max:255'],
@@ -147,9 +152,30 @@ class ProjectController extends Controller
             'echeance' => ['sometimes', 'nullable', 'date'],
         ]);
 
+        $ancienStatut = $task->statut;
         $task->update($data);
 
+        $this->notifierPartenaire($task, $ancienStatut);
+
         return back(fallback: route('projects.show', $task->project_id));
+    }
+
+    /**
+     * Prévient le partenaire émetteur quand sa tâche passe en « en cours » (prise
+     * en charge) ou « fait » (terminée). Uniquement sur transition réelle de statut.
+     */
+    private function notifierPartenaire(ProjectTask $task, string $ancienStatut): void
+    {
+        if ($task->source !== 'partenaire'
+            || $task->statut === $ancienStatut
+            || ! in_array($task->statut, ['en_cours', 'fait'], true)) {
+            return;
+        }
+
+        $task->loadMissing('partenaire.user', 'project:id,titre');
+        $task->partenaire?->user?->notify(
+            new \App\Notifications\TacheStatutPartenaire($task, $task->statut)
+        );
     }
 
     public function destroyTask(ProjectTask $task)

@@ -43,6 +43,10 @@ class ClientController extends Controller
 
         return Inertia::render('Clients/Show', [
             'client'  => $client,
+            'support' => [
+                'token'    => $client->support_token,
+                'endpoint' => url('/api/support'),
+            ],
             'besoins' => $client->besoins,
             'devis'   => $client->devis,
             'facturesPonctuelles' => $client->facturesPonctuelles,
@@ -66,6 +70,15 @@ class ClientController extends Controller
     public function create()
     {
         return Inertia::render('Clients/Create');
+    }
+
+    /** (Ré)génère le token d'assistance du client (à coller sur son site). */
+    public function regenerateSupportToken(Prospect $client)
+    {
+        abort_unless($client->est_client, 404);
+        $client->genererTokenSupport();
+
+        return back()->with('success', 'Nouveau token d’assistance généré.');
     }
 
     /** Création manuelle d'un client existant (hors prospection). */
