@@ -6,6 +6,27 @@ const PIPE_COLORS = {
     rdv: 'bg-violet-500', gagne: 'bg-green-500', perdu: 'bg-red-400',
 };
 
+// Rappels unifiés : maintenance de tickets, tâches partenaires, relances prospects.
+const RAPPEL_META = {
+    maintenance: { icon: '🛠️', tag: 'Maintenance' },
+    partenaire: { icon: '🤝', tag: 'Partenaire' },
+    prospect: { icon: '📞', tag: 'Relance' },
+};
+
+const TICKET_STATUT = { nouveau: 'Ouvert', en_cours: 'En cours', en_test: 'En vérification' };
+const GRAVITE_STYLE = {
+    bloquant: 'bg-red-100 text-red-700', majeur: 'bg-amber-100 text-amber-700', mineur: 'bg-gray-100 text-gray-600',
+};
+
+function delta(j) {
+    if (j == null) return '';
+    return j < 0 ? `retard ${-j}j` : j === 0 ? "aujourd'hui" : `J-${j}`;
+}
+
+function deltaColor(j) {
+    return j == null ? 'text-gray-400' : j < 0 ? 'text-red-600' : j <= 1 ? 'text-amber-600' : 'text-gray-400';
+}
+
 function Kpi({ label, value, accent = 'text-gray-900', to }) {
     const inner = (
         <div className="rounded-lg bg-white p-5 shadow transition hover:shadow-md">
@@ -23,7 +44,7 @@ function jdiff(dateStr) {
     return Math.round((d - t) / 86400000);
 }
 
-export default function Dashboard({ statutsProspect, prospectStats, kpis, relances, aoUrgents, aContacterEmail = [], avecEmailTotal = 0, facturesEnRetard = [] }) {
+export default function Dashboard({ statutsProspect, prospectStats, kpis, rappels = [], ticketsEnCours = [], ticketsCount = 0, aoUrgents, aContacterEmail = [], avecEmailTotal = 0, facturesEnRetard = [] }) {
     const pipeOrder = ['a_contacter', 'contacte', 'relance', 'rdv', 'gagne', 'perdu'];
     const maxPipe = Math.max(1, ...pipeOrder.map((k) => prospectStats[k] || 0));
 
@@ -88,24 +109,27 @@ export default function Dashboard({ statutsProspect, prospectStats, kpis, relanc
                         </div>
                     </div>
 
-                    {/* Relances */}
+                    {/* Rappels : maintenance + tâches partenaires + relances prospects */}
                     <div className="rounded-lg bg-white p-6 shadow lg:col-span-1">
-                        <h3 className="mb-4 font-semibold text-gray-800">Relances à venir (7 j)</h3>
-                        {relances.length === 0 && <p className="text-sm text-gray-400">Aucune relance programmée.</p>}
+                        <h3 className="mb-4 font-semibold text-gray-800">Rappels à venir (14 j)</h3>
+                        {rappels.length === 0 && <p className="text-sm text-gray-400">Aucun rappel programmé.</p>}
                         <ul className="space-y-2">
-                            {relances.map((p) => {
-                                const j = jdiff(p.prochaine_relance);
-                                return (
-                                    <li key={p.id}>
-                                        <Link href={route('prospects.show', p.id)}
-                                            className="flex items-center justify-between rounded px-2 py-1 text-sm hover:bg-gray-50">
-                                            <span className="truncate text-gray-700">{p.entreprise}</span>
-                                            <span className={j < 0 ? 'text-red-600' : j <= 1 ? 'text-amber-600' : 'text-gray-400'}>
-                                                {j < 0 ? `retard ${-j}j` : j === 0 ? "aujourd'hui" : `J-${j}`}
+                            {rappels.map((r, i) => {
+                                const j = jdiff(r.date);
+                                const meta = RAPPEL_META[r.type] || {};
+                                const inner = (
+                                    <div className="flex items-center justify-between rounded px-2 py-1 text-sm hover:bg-gray-50">
+                                        <span className="flex min-w-0 items-center gap-2">
+                                            <span title={meta.tag}>{meta.icon}</span>
+                                            <span className="truncate text-gray-700">
+                                                {r.label}
+                                                {r.meta && <span className="text-gray-400"> · {r.meta}</span>}
                                             </span>
-                                        </Link>
-                                    </li>
+                                        </span>
+                                        <span className={`whitespace-nowrap ${deltaColor(j)}`}>{delta(j)}</span>
+                                    </div>
                                 );
+                                return <li key={i}>{r.url ? <Link href={r.url}>{inner}</Link> : inner}</li>;
                             })}
                         </ul>
                     </div>
@@ -134,6 +158,38 @@ export default function Dashboard({ statutsProspect, prospectStats, kpis, relanc
                             })}
                         </ul>
                     </div>
+                </div>
+
+                {/* Tickets en cours (assistance / incidents) */}
+                <div className="rounded-lg bg-white p-6 shadow">
+                    <div className="mb-4 flex items-center justify-between">
+                        <h3 className="font-semibold text-gray-800">
+                            🎫 Tickets en cours
+                            <span className="ml-2 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">{ticketsCount}</span>
+                        </h3>
+                    </div>
+                    {ticketsEnCours.length === 0 ? (
+                        <p className="text-sm text-gray-400">Aucun ticket en cours. 🎉</p>
+                    ) : (
+                        <ul className="divide-y divide-gray-100">
+                            {ticketsEnCours.map((t) => {
+                                const row = (
+                                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 py-2 text-sm hover:bg-gray-50">
+                                        <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${GRAVITE_STYLE[t.gravite] || 'bg-gray-100 text-gray-600'}`}>
+                                            {t.gravite}
+                                        </span>
+                                        <span className="font-mono text-xs text-gray-400">{t.reference}</span>
+                                        <span className="min-w-0 flex-1 truncate font-medium text-gray-800">{t.titre}</span>
+                                        {t.client && <span className="truncate text-xs text-gray-500">{t.client}</span>}
+                                        <span className="whitespace-nowrap rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+                                            {TICKET_STATUT[t.statut] || t.statut}
+                                        </span>
+                                    </div>
+                                );
+                                return <li key={t.id}>{t.url ? <Link href={t.url}>{row}</Link> : row}</li>;
+                            })}
+                        </ul>
+                    )}
                 </div>
 
                 {/* À contacter — email disponible (action rapide) */}
