@@ -41,7 +41,7 @@ class DashboardController extends Controller
                 'gravite'    => $b->gravite,
                 'client'     => $b->project?->prospect?->entreprise,
                 'project_id' => $b->project_id,
-                'url'        => $b->project_id ? route('projects.show', $b->project_id) : null,
+                'url'        => route('tickets.show', $b->id),
             ]);
 
         // --- Rappels : agrégat trié par échéance (maintenance + partenaires + relances) ---

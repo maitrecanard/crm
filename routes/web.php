@@ -14,6 +14,7 @@ use App\Http\Controllers\PortailController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProspectController;
+use App\Http\Controllers\TicketController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => redirect()->route('dashboard'));
@@ -30,6 +31,8 @@ Route::middleware('signed')->group(function () {
 Route::middleware(['auth', \App\Http\Middleware\EnsurePartenaire::class])->group(function () {
     Route::get('/portail', [PortailController::class, 'index'])->name('portail.index');
     Route::post('/portail/taches', [PortailController::class, 'storeTask'])->name('portail.tasks.store');
+    Route::post('/portail/taches/{task}/repondre', [PortailController::class, 'respondTask'])->name('portail.tasks.respond');
+    Route::post('/portail/taches/{task}/statut', [PortailController::class, 'updateTask'])->name('portail.tasks.status');
 });
 
 // Notifications in-app (badge) — accessible aux admins comme aux partenaires.
@@ -94,7 +97,9 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class, \App\Htt
     Route::get('/projets/{project}', [ProjectController::class, 'show'])->name('projects.show');
     Route::put('/projets/{project}', [ProjectController::class, 'update'])->name('projects.update');
     Route::post('/projets/{project}/taches', [ProjectController::class, 'storeTask'])->name('tasks.store');
+    Route::post('/projets/{project}/assigner', [ProjectController::class, 'assignTask'])->name('tasks.assign');
     Route::put('/taches/{task}', [ProjectController::class, 'updateTask'])->name('tasks.update');
+    Route::put('/taches/{task}/reassigner', [ProjectController::class, 'reassignTask'])->name('tasks.reassign');
     Route::delete('/taches/{task}', [ProjectController::class, 'destroyTask'])->name('tasks.destroy');
 
     // --- Partenaires ---
@@ -107,6 +112,12 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class, \App\Htt
     Route::post('/partenaires/{partenaire}/invite', [PartenaireController::class, 'resendInvite'])->name('partenaires.invite');
     Route::post('/partenaires/{partenaire}/projets', [PartenaireController::class, 'attachProject'])->name('partenaires.projets.attach');
     Route::delete('/partenaires/{partenaire}/projets/{project}', [PartenaireController::class, 'detachProject'])->name('partenaires.projets.detach');
+
+    // --- Tickets (assistance / maintenance / évolutions) ---
+    Route::get('/tickets', [TicketController::class, 'index'])->name('tickets.index');
+    Route::get('/tickets/create', [TicketController::class, 'create'])->name('tickets.create');
+    Route::post('/tickets', [TicketController::class, 'store'])->name('tickets.store');
+    Route::get('/tickets/{bug}', [TicketController::class, 'show'])->name('tickets.show');
 
     // Suivi de production : bugs déclarés par le client.
     Route::post('/projets/{project}/bugs', [BugController::class, 'store'])->name('bugs.store');

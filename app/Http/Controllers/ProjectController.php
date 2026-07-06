@@ -89,7 +89,7 @@ class ProjectController extends Controller
         $project->load([
             'prospect:id,entreprise,localite,telephone,email',
             'tender:id,idweb,objet',
-            'tasks',
+            'tasks.partenaire:id,nom',
             'bugs.messages',
             'bugs.images:id,bug_id,nom',
         ]);
@@ -102,6 +102,8 @@ class ProjectController extends Controller
             'gravites'     => \App\Models\Bug::GRAVITES,
             'typesBug'     => \App\Models\Bug::TYPES,
             'recurrences'  => \App\Models\Bug::RECURRENCES,
+            // Partenaires assignables.
+            'partenaires'  => Partenaire::orderBy('nom')->get(['id', 'nom']),
         ]);
     }
 
@@ -184,5 +186,57 @@ class ProjectController extends Controller
         $task->delete();
 
         return back(fallback: route('projects.show', $project));
+    }
+
+    /** J'assigne une tâche à un partenaire : il devra l'accepter ou la refuser. */
+    public function assignTask(Request $request, Project $project)
+    {
+        $data = $request->validate([
+            'partenaire_id' => ['required', 'exists:partenaires,id'],
+            'titre'         => ['required', 'string', 'max:255'],
+            'description'   => ['nullable', 'string'],
+            'echeance'      => ['nullable', 'date'],
+        ]);
+
+        $task = $project->tasks()->create([
+            'titre'         => $data['titre'],
+            'description'   => $data['description'] ?? null,
+            'echeance'      => $data['echeance'] ?? null,
+            'statut'        => 'proposee',
+            'source'        => 'assignee',
+            'partenaire_id' => $data['partenaire_id'],
+            'ordre'         => (int) $project->tasks()->max('ordre') + 1,
+        ]);
+
+        $this->notifierAssignation($task);
+
+        return back(fallback: route('projects.show', $project))
+            ->with('success', 'Tâche assignée — le partenaire doit l’accepter.');
+    }
+
+    /** Réassigner une tâche (typiquement refusée) à un autre partenaire. */
+    public function reassignTask(Request $request, ProjectTask $task)
+    {
+        $data = $request->validate([
+            'partenaire_id' => ['required', 'exists:partenaires,id'],
+        ]);
+
+        $task->update([
+            'partenaire_id' => $data['partenaire_id'],
+            'statut'        => 'proposee',
+            'source'        => 'assignee',
+            'motif_refus'   => null,
+        ]);
+
+        $this->notifierAssignation($task);
+
+        return back(fallback: route('projects.show', $task->project_id))
+            ->with('success', 'Tâche réassignée — le nouveau partenaire doit l’accepter.');
+    }
+
+    private function notifierAssignation(ProjectTask $task): void
+    {
+        $task->loadMissing('partenaire.user', 'project:id,titre');
+        $task->partenaire?->user?->notify(new \App\Notifications\TacheAssigneePartenaire($task));
     }
 }

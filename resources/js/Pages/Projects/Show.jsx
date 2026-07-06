@@ -3,6 +3,8 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 import { useState } from 'react';
 
 const TACHE_COLORS = {
+    proposee: 'bg-amber-100 text-amber-700',
+    refusee: 'bg-red-100 text-red-700',
     a_faire: 'bg-gray-100 text-gray-600',
     en_cours: 'bg-amber-100 text-amber-700',
     fait: 'bg-green-100 text-green-700',
@@ -18,7 +20,7 @@ const PROJET_STATUT_COLORS = {
     suspendu: 'bg-red-100 text-red-700',
 };
 
-export default function Show({ project, statuts, statutsTache, statutsBug, gravites, typesBug, recurrences }) {
+export default function Show({ project, statuts, statutsTache, statutsBug, gravites, typesBug, recurrences, partenaires = [] }) {
     const [tab, setTab] = useState('overview');
 
     const form = useForm({
@@ -53,12 +55,18 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
         e.preventDefault();
         newTask.post(route('tasks.store', project.id), { preserveScroll: true, onSuccess: () => newTask.reset() });
     };
-    const cycle = (t) => router.put(route('tasks.update', t.id), { statut: NEXT[t.statut] },
+    const cycle = (t) => NEXT[t.statut] && router.put(route('tasks.update', t.id), { statut: NEXT[t.statut] },
         { preserveScroll: true, preserveState: true });
     const removeTask = (t) => {
         if (confirm('Supprimer cette tâche ?')) {
             router.delete(route('tasks.destroy', t.id), { preserveScroll: true, preserveState: true });
         }
+    };
+
+    const assignForm = useForm({ partenaire_id: '', titre: '', description: '', echeance: '' });
+    const assign = (e) => {
+        e.preventDefault();
+        assignForm.post(route('tasks.assign', project.id), { preserveScroll: true, onSuccess: () => assignForm.reset() });
     };
 
     const TABS = [
@@ -246,38 +254,73 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
 
                 {/* ---------- TÂCHES ---------- */}
                 {tab === 'taches' && (
-                    <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow">
-                        <div className="mb-2 flex items-center justify-between">
-                            <h3 className="font-semibold text-gray-800">Plan de gestion</h3>
-                            <span className="text-sm text-gray-500">{faites}/{tasks.length} — {avancement}%</span>
+                    <div className="mx-auto max-w-2xl space-y-6">
+                        <div className="rounded-lg bg-white p-6 shadow">
+                            <div className="mb-2 flex items-center justify-between">
+                                <h3 className="font-semibold text-gray-800">Plan de gestion</h3>
+                                <span className="text-sm text-gray-500">{faites}/{tasks.length} — {avancement}%</span>
+                            </div>
+                            <div className="mb-4 h-2 overflow-hidden rounded-full bg-gray-100">
+                                <div className="h-full bg-emerald-500" style={{ width: `${avancement}%` }} />
+                            </div>
+                            <ul className="divide-y divide-gray-100">
+                                {tasks.map((t) => (
+                                    <TaskItem key={t.id} task={t} statutsTache={statutsTache} partenaires={partenaires}
+                                        onCycle={cycle} onRemove={removeTask} />
+                                ))}
+                                {!tasks.length && <li className="py-3 text-sm text-gray-400">Aucune tâche.</li>}
+                            </ul>
+                            <form onSubmit={addTask} className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                                <input value={newTask.data.titre} onChange={(e) => newTask.setData('titre', e.target.value)}
+                                    placeholder="Nouvelle tâche…" className="flex-1 rounded-md border-gray-300 text-sm" />
+                                <input type="date" value={newTask.data.echeance} onChange={(e) => newTask.setData('echeance', e.target.value)}
+                                    className="rounded-md border-gray-300 text-sm" />
+                                <button disabled={newTask.processing || !newTask.data.titre}
+                                    className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">+ Ajouter</button>
+                            </form>
                         </div>
-                        <div className="mb-4 h-2 overflow-hidden rounded-full bg-gray-100">
-                            <div className="h-full bg-emerald-500" style={{ width: `${avancement}%` }} />
-                        </div>
-                        <ul className="divide-y divide-gray-100">
-                            {tasks.map((t) => (
-                                <li key={t.id} className="flex items-center gap-3 py-2">
-                                    <button onClick={() => cycle(t)} title="Changer le statut"
-                                        className={`rounded-full px-2 py-0.5 text-xs font-medium ${TACHE_COLORS[t.statut]}`}>
-                                        {statutsTache[t.statut]}
+
+                        {/* Assigner une tâche à un partenaire (il devra l'accepter ou la refuser) */}
+                        <div className="rounded-lg bg-white p-6 shadow">
+                            <h3 className="mb-3 font-semibold text-gray-800">🤝 Assigner une tâche à un partenaire</h3>
+                            {partenaires.length ? (
+                                <form onSubmit={assign} className="space-y-3">
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Partenaire *</label>
+                                            <select value={assignForm.data.partenaire_id} onChange={(e) => assignForm.setData('partenaire_id', e.target.value)}
+                                                className="mt-1 w-full rounded-md border-gray-300 text-sm">
+                                                <option value="">Choisir…</option>
+                                                {partenaires.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+                                            </select>
+                                            {assignForm.errors.partenaire_id && <p className="text-xs text-red-600">{assignForm.errors.partenaire_id}</p>}
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700">Échéance</label>
+                                            <input type="date" value={assignForm.data.echeance} onChange={(e) => assignForm.setData('echeance', e.target.value)}
+                                                className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Tâche *</label>
+                                        <input value={assignForm.data.titre} onChange={(e) => assignForm.setData('titre', e.target.value)}
+                                            className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                                        {assignForm.errors.titre && <p className="text-xs text-red-600">{assignForm.errors.titre}</p>}
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700">Détails</label>
+                                        <textarea rows="2" value={assignForm.data.description} onChange={(e) => assignForm.setData('description', e.target.value)}
+                                            className="mt-1 w-full rounded-md border-gray-300 text-sm" />
+                                    </div>
+                                    <button disabled={assignForm.processing || !assignForm.data.partenaire_id || !assignForm.data.titre}
+                                        className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+                                        Assigner
                                     </button>
-                                    <span className={`flex-1 text-sm ${t.statut === 'fait' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                                        {t.titre}
-                                    </span>
-                                    {t.echeance && <span className="text-xs text-gray-400">{new Date(t.echeance).toLocaleDateString('fr-FR')}</span>}
-                                    <button onClick={() => removeTask(t)} className="text-gray-300 hover:text-red-500" title="Supprimer">✕</button>
-                                </li>
-                            ))}
-                            {!tasks.length && <li className="py-3 text-sm text-gray-400">Aucune tâche.</li>}
-                        </ul>
-                        <form onSubmit={addTask} className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
-                            <input value={newTask.data.titre} onChange={(e) => newTask.setData('titre', e.target.value)}
-                                placeholder="Nouvelle tâche…" className="flex-1 rounded-md border-gray-300 text-sm" />
-                            <input type="date" value={newTask.data.echeance} onChange={(e) => newTask.setData('echeance', e.target.value)}
-                                className="rounded-md border-gray-300 text-sm" />
-                            <button disabled={newTask.processing || !newTask.data.titre}
-                                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white disabled:opacity-50">+ Ajouter</button>
-                        </form>
+                                </form>
+                            ) : (
+                                <p className="text-sm text-gray-400">Aucun partenaire enregistré. Ajoutez-en dans l’onglet Partenaires.</p>
+                            )}
+                        </div>
                     </div>
                 )}
 
@@ -309,6 +352,52 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
                 )}
             </div>
         </AuthenticatedLayout>
+    );
+}
+
+/** Une ligne de tâche. Les tâches assignées à un partenaire affichent son nom et,
+ *  si elles ont été refusées, le motif + un contrôle de réassignation. */
+function TaskItem({ task, statutsTache, partenaires, onCycle, onRemove }) {
+    const [reassign, setReassign] = useState('');
+    const assigned = task.source === 'assignee';
+    const canCycle = ['a_faire', 'en_cours', 'fait'].includes(task.statut);
+
+    const doReassign = () => {
+        if (reassign) {
+            router.put(route('tasks.reassign', task.id), { partenaire_id: reassign },
+                { preserveScroll: true, preserveState: true });
+        }
+    };
+
+    return (
+        <li className="py-2">
+            <div className="flex items-center gap-3">
+                <button onClick={() => onCycle(task)} disabled={!canCycle} title={canCycle ? 'Changer le statut' : 'Piloté par le partenaire'}
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${TACHE_COLORS[task.statut]} ${canCycle ? '' : 'cursor-default'}`}>
+                    {statutsTache[task.statut]}
+                </button>
+                <span className={`flex-1 text-sm ${task.statut === 'fait' ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
+                    {task.titre}
+                    {assigned && task.partenaire && <span className="ml-2 text-xs text-indigo-500">→ {task.partenaire.nom}</span>}
+                </span>
+                {task.echeance && <span className="text-xs text-gray-400">{new Date(task.echeance).toLocaleDateString('fr-FR')}</span>}
+                <button onClick={() => onRemove(task)} className="text-gray-300 hover:text-red-500" title="Supprimer">✕</button>
+            </div>
+            {assigned && task.statut === 'refusee' && (
+                <div className="mt-1 rounded bg-red-50 px-2 py-1 text-xs text-red-700">
+                    Refusée{task.motif_refus ? ` : ${task.motif_refus}` : ''}
+                    <div className="mt-1 flex items-center gap-2">
+                        <select value={reassign} onChange={(e) => setReassign(e.target.value)}
+                            className="rounded border-gray-300 text-xs">
+                            <option value="">Réassigner à…</option>
+                            {partenaires.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+                        </select>
+                        <button onClick={doReassign} disabled={!reassign}
+                            className="rounded bg-gray-800 px-2 py-0.5 text-xs text-white disabled:opacity-50">OK</button>
+                    </div>
+                </div>
+            )}
+        </li>
     );
 }
 

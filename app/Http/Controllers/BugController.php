@@ -2,17 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Concerns\NotifieClientTicket;
 use App\Mail\BugMessageMail;
-use App\Mail\BugStatusMail;
 use App\Models\Bug;
 use App\Models\Project;
 use Illuminate\Http\Request;
-use Illuminate\Mail\Mailable;
-use Illuminate\Support\Facades\Mail;
 
 class BugController extends Controller
 {
-    /** Le client déclare un bug -> enregistré + accusé de réception par e-mail. */
+    use NotifieClientTicket;
+
+    /** Ouverture d'un ticket depuis la fiche projet -> accusé de réception au client. */
     public function store(Request $request, Project $project)
     {
         $data = $request->validate([
@@ -25,16 +25,16 @@ class BugController extends Controller
             'issue_git'          => ['nullable', 'string', 'max:255'],
         ]);
 
-        $bug = $project->bugs()->create($data + ['statut' => 'nouveau']);
+        $bug = $project->bugs()->create($data + ['statut' => 'nouveau', 'source' => 'interne']);
 
-        $res = $this->notify($bug);
+        $res = $this->notifierStatut($bug);
 
         return $res['sent']
             ? back()->with('success', 'Ticket enregistré — accusé de réception envoyé au client.')
             : back()->with('error', 'Ticket enregistré, mais e-mail NON envoyé : '.$res['reason']);
     }
 
-    /** Mise à jour : un changement de STATUT notifie le client. */
+    /** Mise à jour : un changement de STATUT est journalisé et notifie le client. */
     public function update(Request $request, Bug $bug)
     {
         $data = $request->validate([
@@ -48,7 +48,8 @@ class BugController extends Controller
             'issue_git'          => ['sometimes', 'nullable', 'string', 'max:255'],
         ]);
 
-        $statutChange = array_key_exists('statut', $data) && $data['statut'] !== $bug->statut;
+        $ancienStatut = $bug->statut;
+        $statutChange = array_key_exists('statut', $data) && $data['statut'] !== $ancienStatut;
 
         if ($statutChange && $data['statut'] === 'livre') {
             $data['resolved_at'] = now();
@@ -60,7 +61,9 @@ class BugController extends Controller
             return back()->with('success', 'Ticket mis à jour.');
         }
 
-        $res = $this->notify($bug);
+        $bug->logStatut($ancienStatut, $bug->statut);
+
+        $res = $this->notifierStatut($bug);
 
         return $res['sent']
             ? back()->with('success', 'Statut mis à jour — client notifié par e-mail.')
@@ -82,7 +85,7 @@ class BugController extends Controller
             return back()->with('success', 'Note interne ajoutée (non transmise au client).');
         }
 
-        $res = $this->sendToClient($bug, new BugMessageMail($bug, $message));
+        $res = $this->envoyerAuClient($bug, new BugMessageMail($bug, $message));
         if ($res['sent']) {
             $message->forceFill(['notifie_le' => now()])->save();
 
@@ -94,44 +97,9 @@ class BugController extends Controller
 
     public function destroy(Bug $bug)
     {
-        $project = $bug->project_id;
         $bug->delete();
 
-        return back(fallback: route('projects.show', $project));
-    }
-
-    /** Notifie le client d'un changement d'étape (e-mail de statut). */
-    private function notify(Bug $bug): array
-    {
-        $res = $this->sendToClient($bug, new BugStatusMail($bug));
-        if ($res['sent']) {
-            $bug->forceFill(['notifie_le' => now()])->save();
-        }
-
-        return $res;
-    }
-
-    /**
-     * Envoie un e-mail au client du projet (au nom du support).
-     * @return array{sent: bool, reason: string}
-     */
-    private function sendToClient(Bug $bug, Mailable $mail): array
-    {
-        $bug->loadMissing('project.prospect');
-        $email = $bug->project?->prospect?->email;
-
-        if (! $email) {
-            return ['sent' => false, 'reason' => 'le client n’a pas d’adresse e-mail (à renseigner sur sa fiche).'];
-        }
-
-        try {
-            Mail::to($email)->send($mail);
-
-            return ['sent' => true, 'reason' => ''];
-        } catch (\Throwable $e) {
-            report($e);
-
-            return ['sent' => false, 'reason' => $e->getMessage()];
-        }
+        // Depuis la fiche projet : retour à la fiche ; depuis la page ticket : repli sur la liste.
+        return back(fallback: route('tickets.index'))->with('success', 'Ticket supprimé.');
     }
 }
