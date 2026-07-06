@@ -21,7 +21,25 @@ class Bug extends Model
                 $bug->reference = sprintf('TIC-%d-%04d', $bug->created_at?->year ?? now()->year, $bug->id);
                 $bug->saveQuietly();
             }
+
+            // Premier événement de l'historique : ouverture du ticket.
+            $bug->events()->create([
+                'type'           => 'creation',
+                'nouveau_statut' => $bug->statut,
+                'auteur'         => $bug->source === 'client_site' ? 'client' : 'support',
+            ]);
         });
+    }
+
+    /** Journalise un changement de statut dans l'historique du ticket. */
+    public function logStatut(string $ancien, string $nouveau, string $auteur = 'support'): void
+    {
+        $this->events()->create([
+            'type'           => 'statut',
+            'ancien_statut'  => $ancien,
+            'nouveau_statut' => $nouveau,
+            'auteur'         => $auteur,
+        ]);
     }
 
     protected $casts = [
@@ -136,6 +154,11 @@ class Bug extends Model
     public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(BugMessage::class)->orderBy('created_at');
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(BugEvent::class)->orderBy('created_at');
     }
 
     public function images(): HasMany

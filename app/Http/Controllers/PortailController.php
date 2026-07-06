@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use App\Models\ProjectTask;
+use App\Models\User;
+use App\Notifications\ReponseTachePartenaire;
 use Illuminate\Http\Request;
+use Illuminate\Notifications\Notification;
 use Inertia\Inertia;
 
 /**
@@ -62,5 +65,56 @@ class PortailController extends Controller
         ]);
 
         return back()->with('success', 'Tâche transmise. Merci !');
+    }
+
+    /** Le partenaire accepte ou refuse (avec motif) une tâche qui lui est assignée. */
+    public function respondTask(Request $request, ProjectTask $task)
+    {
+        $partenaire = $request->user()->partenaire;
+        abort_unless($task->partenaire_id === $partenaire?->id && $task->estAProposer(), 403);
+
+        $data = $request->validate([
+            'action'      => ['required', 'in:accepter,refuser'],
+            'motif_refus' => ['required_if:action,refuser', 'nullable', 'string', 'max:2000'],
+        ]);
+
+        if ($data['action'] === 'accepter') {
+            $task->update(['statut' => 'a_faire', 'motif_refus' => null]);
+            $this->notifierAdmins(new ReponseTachePartenaire($task, 'acceptee'));
+
+            return back()->with('success', 'Tâche acceptée — merci !');
+        }
+
+        $task->update(['statut' => 'refusee', 'motif_refus' => $data['motif_refus']]);
+        $this->notifierAdmins(new ReponseTachePartenaire($task, 'refusee'));
+
+        return back()->with('success', 'Tâche refusée. Le donneur d’ordre est prévenu.');
+    }
+
+    /** Le partenaire fait progresser une tâche acceptée (à faire -> en cours -> fait). */
+    public function updateTask(Request $request, ProjectTask $task)
+    {
+        $partenaire = $request->user()->partenaire;
+        abort_unless($task->partenaire_id === $partenaire?->id && $task->source === 'assignee', 403);
+        // La tâche doit d'abord avoir été acceptée (pas encore proposée/refusée).
+        abort_if(in_array($task->statut, ['proposee', 'refusee'], true), 403);
+
+        $data = $request->validate([
+            'statut' => ['required', 'in:'.implode(',', ProjectTask::STATUTS_PARTENAIRE)],
+        ]);
+
+        $task->update(['statut' => $data['statut']]);
+
+        if ($data['statut'] === 'fait') {
+            $this->notifierAdmins(new ReponseTachePartenaire($task, 'fait'));
+        }
+
+        return back()->with('success', 'Statut mis à jour.');
+    }
+
+    /** Notifie tous les administrateurs (comptes non-partenaires). */
+    private function notifierAdmins(Notification $notification): void
+    {
+        User::where('role', '!=', 'partenaire')->get()->each->notify($notification);
     }
 }
