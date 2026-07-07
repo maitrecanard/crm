@@ -110,6 +110,7 @@ class TicketController extends Controller
         $bug->load([
             'project:id,prospect_id,titre',
             'project.prospect:id,entreprise,email,telephone',
+            'project.prospect.contacts',
             'messages',
             'images:id,bug_id,nom',
             'events',
@@ -164,7 +165,8 @@ class TicketController extends Controller
                     'url' => route('bugs.images.show', $i->id),
                 ])->values(),
             ],
-            'historique'  => $historique,
+            'historique'   => $historique,
+            'destinataires' => $bug->project?->prospect?->destinatairesTickets() ?? [],
             'statuts'     => Bug::STATUTS,
             'types'       => Bug::TYPES,
             'gravites'    => Bug::GRAVITES,

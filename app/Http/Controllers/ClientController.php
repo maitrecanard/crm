@@ -38,11 +38,12 @@ class ClientController extends Controller
 
         $client->load(
             'besoins', 'devis', 'facturesPonctuelles', 'facturesMensuelles', 'contrats',
-            'projects:id,prospect_id,titre,statut',
+            'projects:id,prospect_id,titre,statut', 'contacts',
         );
 
         return Inertia::render('Clients/Show', [
-            'client'  => $client,
+            'client'   => $client,
+            'contacts' => $client->contacts,
             'support' => [
                 'token'    => $client->support_token,
                 'endpoint' => url('/api/support'),
@@ -135,6 +136,41 @@ class ClientController extends Controller
         $besoin->delete();
 
         return back()->with('success', 'Besoin supprimé.');
+    }
+
+    // --- Contacts (liste de diffusion) -------------------------------------
+    public function storeContact(Request $request, Prospect $client)
+    {
+        $client->contacts()->create($this->validateContact($request));
+
+        return back()->with('success', 'Contact ajouté.');
+    }
+
+    public function updateContact(Request $request, \App\Models\ClientContact $contact)
+    {
+        $contact->update($this->validateContact($request, partial: true));
+
+        return back()->with('success', 'Contact mis à jour.');
+    }
+
+    public function destroyContact(\App\Models\ClientContact $contact)
+    {
+        $contact->delete();
+
+        return back()->with('success', 'Contact supprimé.');
+    }
+
+    /** @return array<string,mixed> */
+    private function validateContact(Request $request, bool $partial = false): array
+    {
+        $rule = $partial ? 'sometimes' : 'required';
+
+        return $request->validate([
+            'nom'             => ['nullable', 'string', 'max:255'],
+            'email'           => [$rule, 'email', 'max:255'],
+            'fonction'        => ['nullable', 'string', 'max:255'],
+            'notifie_tickets' => ['boolean'],
+        ]);
     }
 
     // --- Devis -------------------------------------------------------------

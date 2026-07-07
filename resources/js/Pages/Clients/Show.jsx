@@ -18,7 +18,7 @@ const FACT_BADGE = {
     payee: 'bg-green-100 text-green-700', impayee: 'bg-rose-100 text-rose-700',
 };
 
-export default function ClientShow({ client, support, besoins, devis, facturesPonctuelles, facturation,
+export default function ClientShow({ client, contacts = [], support, besoins, devis, facturesPonctuelles, facturation,
     contrats, emailGenere, statutsBesoin, statutsDevis, statutsFacture, statutsContrat }) {
     return (
         <AuthenticatedLayout header={
@@ -39,6 +39,7 @@ export default function ClientShow({ client, support, besoins, devis, facturesPo
                         </span>
                     )}
                     <nav className="ml-auto flex flex-wrap gap-2 text-sm">
+                        <a href="#contacts" className="rounded-md bg-white px-3 py-1 text-indigo-600 hover:bg-emerald-100">👥 Contacts</a>
                         <a href="#besoins" className="rounded-md bg-white px-3 py-1 text-indigo-600 hover:bg-emerald-100">Besoins</a>
                         <a href="#devis" className="rounded-md bg-white px-3 py-1 text-indigo-600 hover:bg-emerald-100">Devis</a>
                         <a href="#factures" className="rounded-md bg-white px-3 py-1 text-indigo-600 hover:bg-emerald-100">Factures</a>
@@ -64,6 +65,8 @@ export default function ClientShow({ client, support, besoins, devis, facturesPo
                 )}
 
                 <AssistanceCard client={client} support={support} />
+
+                <ContactsCard client={client} contacts={contacts} />
 
                 <BesoinsCard client={client} besoins={besoins} statuts={statutsBesoin} />
                 <DevisCard client={client} devis={devis} statuts={statutsDevis} />
@@ -174,6 +177,59 @@ Content-Type: application/json
                     depuis le site de ce client.
                 </p>
             )}
+        </div>
+    );
+}
+
+function ContactsCard({ client, contacts }) {
+    const add = useForm({ nom: '', email: '', fonction: '', notifie_tickets: true });
+    const submit = (e) => { e.preventDefault(); add.post(route('contacts.store', client.id), { preserveScroll: true, onSuccess: () => add.reset() }); };
+    const toggle = (c) => router.put(route('contacts.update', c.id), { notifie_tickets: !c.notifie_tickets }, { preserveScroll: true });
+    const remove = (c) => confirm('Supprimer ce contact ?') && router.delete(route('contacts.destroy', c.id), { preserveScroll: true });
+
+    return (
+        <div id="contacts" className="rounded-lg bg-white p-6 shadow">
+            <h3 className="mb-1 font-semibold text-gray-800">👥 Contacts ({contacts.length})</h3>
+            <p className="mb-3 text-xs text-gray-400">
+                Les e-mails de suivi des tickets partent à l’adresse principale du client
+                {client.email ? <> (<span className="font-medium">{client.email}</span>)</> : <span className="text-rose-500"> (non renseignée)</span>}
+                {' '}plus chaque contact coché ci-dessous.
+            </p>
+            <ul className="space-y-2">
+                {contacts.map((c) => (
+                    <li key={c.id} className="flex items-center gap-3 rounded-md border border-gray-100 p-3 text-sm">
+                        <div className="flex-1">
+                            <p className="font-medium text-gray-800">
+                                {c.nom || c.email}
+                                {c.fonction && <span className="ml-2 text-xs text-gray-400">· {c.fonction}</span>}
+                            </p>
+                            {c.nom && <p className="text-xs text-gray-500">{c.email}</p>}
+                        </div>
+                        <label className="flex items-center gap-1 text-xs text-gray-600" title="Reçoit les e-mails de tickets">
+                            <input type="checkbox" checked={c.notifie_tickets} onChange={() => toggle(c)} className="rounded border-gray-300" />
+                            🎫 tickets
+                        </label>
+                        <button onClick={() => remove(c)} className="text-gray-300 hover:text-rose-500" title="Supprimer">✕</button>
+                    </li>
+                ))}
+                {contacts.length === 0 && <li className="text-sm text-gray-400">Aucun contact. L’e-mail principal du client reste utilisé.</li>}
+            </ul>
+            <form onSubmit={submit} className="mt-4 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
+                <input value={add.data.nom} onChange={(e) => add.setData('nom', e.target.value)}
+                    placeholder="Nom" className="w-32 rounded-md border-gray-300 text-sm" />
+                <input type="email" value={add.data.email} onChange={(e) => add.setData('email', e.target.value)}
+                    placeholder="email@client.fr *" className="flex-1 rounded-md border-gray-300 text-sm" />
+                <input value={add.data.fonction} onChange={(e) => add.setData('fonction', e.target.value)}
+                    placeholder="Fonction" className="w-32 rounded-md border-gray-300 text-sm" />
+                <label className="flex items-center gap-1 text-xs text-gray-600">
+                    <input type="checkbox" checked={add.data.notifie_tickets}
+                        onChange={(e) => add.setData('notifie_tickets', e.target.checked)} className="rounded border-gray-300" />
+                    🎫 tickets
+                </label>
+                <button disabled={add.processing || !add.data.email}
+                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Ajouter</button>
+            </form>
+            {add.errors.email && <p className="mt-1 text-xs text-rose-600">{add.errors.email}</p>}
         </div>
     );
 }

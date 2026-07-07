@@ -68,6 +68,10 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class, \App\Htt
     Route::get('/clients/{client}', [ClientController::class, 'show'])->name('clients.show');
     Route::put('/clients/{client}/support-token', [ClientController::class, 'regenerateSupportToken'])->name('clients.support-token');
     // Besoins
+    Route::post('/clients/{client}/contacts', [ClientController::class, 'storeContact'])->name('contacts.store');
+    Route::put('/contacts/{contact}', [ClientController::class, 'updateContact'])->name('contacts.update');
+    Route::delete('/contacts/{contact}', [ClientController::class, 'destroyContact'])->name('contacts.destroy');
+
     Route::post('/clients/{client}/besoins', [ClientController::class, 'storeBesoin'])->name('besoins.store');
     Route::put('/besoins/{besoin}', [ClientController::class, 'updateBesoin'])->name('besoins.update');
     Route::delete('/besoins/{besoin}', [ClientController::class, 'destroyBesoin'])->name('besoins.destroy');
