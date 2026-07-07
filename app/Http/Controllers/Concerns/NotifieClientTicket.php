@@ -20,15 +20,15 @@ trait NotifieClientTicket
      */
     protected function envoyerAuClient(Bug $bug, Mailable $mail): array
     {
-        $bug->loadMissing('project.prospect');
-        $email = $bug->project?->prospect?->email;
+        $bug->loadMissing('project.prospect.contacts');
+        $destinataires = $bug->project?->prospect?->destinatairesTickets() ?? [];
 
-        if (! $email) {
-            return ['sent' => false, 'reason' => 'le client n’a pas d’adresse e-mail (à renseigner sur sa fiche).'];
+        if (empty($destinataires)) {
+            return ['sent' => false, 'reason' => 'aucun destinataire (renseigne l’e-mail du client ou un contact abonné aux tickets).'];
         }
 
         try {
-            Mail::to($email)->send($mail);
+            Mail::to($destinataires)->send($mail);
 
             return ['sent' => true, 'reason' => ''];
         } catch (\Throwable $e) {

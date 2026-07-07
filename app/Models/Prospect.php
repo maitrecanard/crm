@@ -55,6 +55,28 @@ class Prospect extends Model
         return $this->hasMany(Project::class)->latest();
     }
 
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(ClientContact::class)->orderByDesc('notifie_tickets')->orderBy('nom');
+    }
+
+    /**
+     * Liste de diffusion des e-mails de tickets : l'e-mail principal du client
+     * plus les contacts abonnés au suivi des tickets, dédupliqués.
+     *
+     * @return array<int,string>
+     */
+    public function destinatairesTickets(): array
+    {
+        $emails = collect([$this->email])
+            ->merge($this->contacts->where('notifie_tickets', true)->pluck('email'))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $emails->all();
+    }
+
     /** Tous les tickets d'assistance du client (à travers ses projets). */
     public function supportTickets()
     {
