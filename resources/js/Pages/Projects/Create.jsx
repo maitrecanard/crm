@@ -3,6 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 
 export default function Create({ clients, partenaires = [], statuts, preselect }) {
     const form = useForm({
+        interne: false,
         prospect_id: preselect || (clients[0]?.id ?? ''),
         partenaire_id: '',
         titre: '', description: '', statut: 'cadrage', budget: '',
@@ -20,21 +21,27 @@ export default function Create({ clients, partenaires = [], statuts, preselect }
         }>
             <Head title="Nouveau projet" />
             <div className="mx-auto max-w-2xl p-4 sm:p-6 lg:p-8">
-                {!clients.length ? (
-                    <div className="rounded-lg bg-white p-6 text-sm text-gray-600 shadow">
-                        Aucun client pour l’instant.{' '}
-                        <Link href={route('clients.create')} className="text-indigo-600 hover:underline">Créer un client</Link> d’abord.
-                    </div>
-                ) : (
                     <form onSubmit={submit} className="space-y-4 rounded-lg bg-white p-6 shadow">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">Client *</label>
-                            <select value={form.data.prospect_id} onChange={(e) => form.setData('prospect_id', e.target.value)}
-                                className="mt-1 w-full rounded-md border-gray-300 text-sm">
-                                {clients.map((c) => <option key={c.id} value={c.id}>{c.entreprise}</option>)}
-                            </select>
-                            {form.errors.prospect_id && <p className="mt-1 text-xs text-red-600">{form.errors.prospect_id}</p>}
-                        </div>
+                        <label className="flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
+                            <input type="checkbox" checked={form.data.interne}
+                                onChange={(e) => form.setData('interne', e.target.checked)} className="rounded border-gray-300" />
+                            🔒 Projet interne (sans client)
+                        </label>
+                        {!form.data.interne && (clients.length ? (
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Client *</label>
+                                <select value={form.data.prospect_id} onChange={(e) => form.setData('prospect_id', e.target.value)}
+                                    className="mt-1 w-full rounded-md border-gray-300 text-sm">
+                                    <option value="">Choisir un client…</option>
+                                    {clients.map((c) => <option key={c.id} value={c.id}>{c.entreprise}</option>)}
+                                </select>
+                                {form.errors.prospect_id && <p className="mt-1 text-xs text-red-600">{form.errors.prospect_id}</p>}
+                            </div>
+                        ) : (
+                            <div className="rounded-md bg-amber-50 p-3 text-sm text-amber-700">
+                                Aucun client. <Link href={route('clients.create')} className="underline">Créer un client</Link>, ou cochez « Projet interne ».
+                            </div>
+                        ))}
                         {partenaires.length > 0 && (
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Partenaire (apporteur / sous-traitance)</label>
@@ -105,13 +112,12 @@ export default function Create({ clients, partenaires = [], statuts, preselect }
                         <p className="text-xs text-gray-400">Un plan de tâches standard sera pré-rempli (modifiable ensuite).</p>
                         <div className="flex items-center justify-end gap-3">
                             <Link href={route('projects.index')} className="text-sm text-gray-500 hover:text-gray-700">Annuler</Link>
-                            <button disabled={form.processing || !form.data.titre}
+                            <button disabled={form.processing || !form.data.titre || (!form.data.interne && !form.data.prospect_id)}
                                 className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
                                 Créer le projet
                             </button>
                         </div>
                     </form>
-                )}
             </div>
         </AuthenticatedLayout>
     );

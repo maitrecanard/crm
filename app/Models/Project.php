@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Project extends Model
 {
     protected $fillable = [
-        'prospect_id', 'partenaire_id', 'tender_id', 'titre', 'description', 'statut',
+        'prospect_id', 'interne', 'partenaire_id', 'tender_id', 'titre', 'description', 'statut',
         'url_prod', 'url_preprod', 'repo_git', 'hebergeur',
         'budget', 'date_debut', 'date_fin_prevue', 'date_livraison', 'notes',
     ];
@@ -19,6 +19,7 @@ class Project extends Model
         'date_debut'      => 'date',
         'date_fin_prevue' => 'date',
         'date_livraison'  => 'date',
+        'interne'         => 'boolean',
     ];
 
     protected $appends = ['avancement'];

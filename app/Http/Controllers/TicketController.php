@@ -74,10 +74,12 @@ class TicketController extends Controller
             ]);
 
         return Inertia::render('Tickets/Create', [
-            'clients'     => $clients,
-            'types'       => Bug::TYPES,
-            'gravites'    => Bug::GRAVITES,
-            'recurrences' => Bug::RECURRENCES,
+            'clients'          => $clients,
+            'internalProjects' => \App\Models\Project::where('interne', true)
+                ->orderBy('titre')->get(['id', 'titre']),
+            'types'            => Bug::TYPES,
+            'gravites'         => Bug::GRAVITES,
+            'recurrences'      => Bug::RECURRENCES,
         ]);
     }
 
