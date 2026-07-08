@@ -18,14 +18,11 @@ class SendRelancesTickets extends Command
 
     protected $description = 'Relance quotidienne (matin/soir) des tickets en cours.';
 
-    /** Étapes considérées comme « en cours » (ni livré, ni clôturé). */
-    private const OUVERTS = ['nouveau', 'en_cours', 'en_test'];
-
     public function handle(): int
     {
         $rang = ['bloquant' => 0, 'majeur' => 1, 'mineur' => 2];
 
-        $tickets = Bug::whereIn('statut', self::OUVERTS)
+        $tickets = Bug::whereIn('statut', Bug::OUVERTS)
             ->with('project.prospect:id,entreprise')
             ->get()
             // Les plus graves d'abord, puis les plus anciens.

@@ -4,6 +4,8 @@ import { Head, Link, router, useForm } from '@inertiajs/react';
 const STATUT_COLORS = {
     nouveau: 'bg-gray-100 text-gray-700',
     en_cours: 'bg-blue-100 text-blue-700',
+    attente_fournisseur: 'bg-orange-100 text-orange-700',
+    attente_client: 'bg-yellow-100 text-yellow-800',
     en_test: 'bg-violet-100 text-violet-700',
     livre: 'bg-green-100 text-green-700',
     ferme: 'bg-gray-200 text-gray-500',
