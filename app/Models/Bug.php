@@ -165,6 +165,12 @@ class Bug extends Model
         return $this->belongsTo(Project::class);
     }
 
+    /** Ticket interne : rattaché à aucun projet/client (donc aucune notification client). */
+    public function estInterne(): bool
+    {
+        return is_null($this->project_id);
+    }
+
     public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(BugMessage::class)->orderBy('created_at');

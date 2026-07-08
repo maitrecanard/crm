@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\NotifieClientTicket;
 use App\Models\Bug;
-use App\Models\Project;
 use App\Models\Prospect;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 /**
@@ -47,6 +47,7 @@ class TicketController extends Controller
                 'gravite'    => $b->gravite,
                 'source'     => $b->source,
                 'client'     => $b->project?->prospect?->entreprise,
+                'interne'    => is_null($b->project_id),
                 'created_at' => $b->created_at,
                 'url'        => route('tickets.show', $b->id),
             ]);
@@ -83,7 +84,8 @@ class TicketController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'project_id'         => ['required', 'integer', 'exists:projects,id'],
+            'interne'            => ['boolean'],
+            'project_id'         => ['nullable', 'integer', 'exists:projects,id'],
             'type'               => ['required', 'in:'.implode(',', array_keys(Bug::TYPES))],
             'titre'              => ['required', 'string', 'max:255'],
             'description'        => ['nullable', 'string'],
@@ -93,10 +95,25 @@ class TicketController extends Controller
             'issue_git'          => ['nullable', 'string', 'max:255'],
         ]);
 
-        $project = Project::findOrFail($data['project_id']);
-        unset($data['project_id']);
+        $interne = (bool) ($data['interne'] ?? false);
 
-        $bug = $project->bugs()->create($data + ['statut' => 'nouveau', 'source' => 'interne']);
+        // Ticket client : un projet est obligatoire. Ticket interne : aucun.
+        if (! $interne && empty($data['project_id'])) {
+            throw ValidationException::withMessages([
+                'project_id' => 'Choisissez un client/projet, ou cochez « Ticket interne ».',
+            ]);
+        }
+
+        $projectId = $interne ? null : $data['project_id'];
+        $fields = collect($data)->except(['interne', 'project_id'])->all()
+            + ['statut' => 'nouveau', 'source' => 'interne', 'project_id' => $projectId];
+
+        $bug = Bug::create($fields);
+
+        // Pas de client sur un ticket interne : aucune notification.
+        if ($interne) {
+            return redirect()->route('tickets.show', $bug)->with('success', 'Ticket interne créé.');
+        }
 
         $res = $this->notifierStatut($bug);
 
@@ -147,6 +164,7 @@ class TicketController extends Controller
                 'type'               => $bug->type,
                 'statut'             => $bug->statut,
                 'statut_label'       => $bug->statutLabel(),
+                'interne'            => $bug->estInterne(),
                 'gravite'            => $bug->gravite,
                 'recurrence'         => $bug->recurrence,
                 'prochaine_echeance' => $bug->prochaine_echeance?->toDateString(),
