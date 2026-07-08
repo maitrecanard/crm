@@ -78,9 +78,10 @@ export default function Index({ tickets, filters = {}, statuts, types, stats = {
                                         <td className="whitespace-nowrap px-4 py-2 font-mono text-xs text-gray-500">{t.reference}</td>
                                         <td className="px-4 py-2 font-medium text-gray-800">{t.titre}</td>
                                         <td className="px-4 py-2 text-gray-600">
-                                            {t.interne
-                                                ? <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">🔒 Interne</span>
-                                                : (t.client || '—')}
+                                            <span className="flex items-center gap-1">
+                                                {t.interne && <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">🔒 Interne</span>}
+                                                {t.client || (t.interne ? '' : '—')}
+                                            </span>
                                         </td>
                                         <td className="px-4 py-2 text-gray-500">{types[t.type] || t.type}</td>
                                         <td className="px-4 py-2">

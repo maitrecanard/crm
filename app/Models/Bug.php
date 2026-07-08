@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Bug extends Model
 {
     protected $fillable = [
-        'project_id', 'reference', 'type', 'source', 'motif', 'titre', 'description',
+        'project_id', 'reference', 'type', 'source', 'interne', 'motif', 'titre', 'description',
         'statut', 'gravite', 'recurrence', 'prochaine_echeance', 'issue_git',
         'notifie_le', 'resolved_at',
     ];
@@ -46,6 +46,7 @@ class Bug extends Model
         'prochaine_echeance' => 'date',
         'notifie_le'         => 'datetime',
         'resolved_at'        => 'datetime',
+        'interne'            => 'boolean',
     ];
 
     /** Nature de l'intervention. */
@@ -173,10 +174,10 @@ class Bug extends Model
         return $this->belongsTo(Project::class);
     }
 
-    /** Ticket interne : rattaché à aucun projet/client (donc aucune notification client). */
+    /** Ticket interne : aucune notification client, qu'il soit rattaché à un projet ou non. */
     public function estInterne(): bool
     {
-        return is_null($this->project_id);
+        return (bool) $this->interne;
     }
 
     public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany
