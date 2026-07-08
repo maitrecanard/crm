@@ -53,6 +53,7 @@ class Bug extends Model
         'bug'         => 'Bug',
         'maintenance' => 'Maintenance périodique',
         'evolution'   => 'Évolution',
+        'tache'       => 'Tâche à réaliser',
     ];
 
     /**
@@ -121,7 +122,7 @@ class Bug extends Model
     /** Préfixe de sujet d'e-mail selon le type. */
     public function subjectPrefix(): string
     {
-        return ['bug' => 'Support', 'maintenance' => 'Maintenance', 'evolution' => 'Évolution'][$this->type] ?? 'Support';
+        return ['bug' => 'Support', 'maintenance' => 'Maintenance', 'evolution' => 'Évolution', 'tache' => 'Tâche'][$this->type] ?? 'Support';
     }
 
     /** Message client associé à l'étape, adapté au type. */
@@ -154,6 +155,13 @@ class Bug extends Model
                 'en_test'  => 'L’évolution est en cours de test avant mise en ligne.',
                 'livre'    => 'L’évolution a été livrée et déployée.',
                 'ferme'    => 'Demande d’évolution clôturée. Merci !',
+            ],
+            'tache' => [
+                'nouveau'  => 'Une tâche a été planifiée sur votre dossier.',
+                'en_cours' => 'La tâche est en cours de réalisation.',
+                'en_test'  => 'La tâche est en cours de vérification.',
+                'livre'    => 'La tâche a été réalisée.',
+                'ferme'    => 'La tâche est clôturée. Merci !',
             ],
         ];
 
