@@ -196,29 +196,29 @@ export default function Show({ ticket, historique, destinataires = [], statuts, 
 
                     <div className="rounded-lg bg-white p-6 shadow">
                         <h3 className="mb-2 font-semibold text-gray-800">Client & projet</h3>
-                        {ticket.interne ? (
-                            <p className="text-sm text-gray-500">🔒 Ticket interne — aucun client rattaché.</p>
-                        ) : (
+                        {ticket.interne && (
+                            <p className="mb-2 rounded bg-gray-50 px-2 py-1 text-xs text-gray-500">🔒 Ticket interne — aucune notification n’est envoyée.</p>
+                        )}
+                        {ticket.client && (
                             <>
-                                {ticket.client && (
-                                    <>
-                                        <Meta label="Client">
-                                            <Link href={route('prospects.show', ticket.client.id)} className="text-indigo-600 hover:underline">
-                                                {ticket.client.entreprise}
-                                            </Link>
-                                        </Meta>
-                                        {ticket.client.email && <Meta label="E-mail">{ticket.client.email}</Meta>}
-                                        {ticket.client.telephone && <Meta label="Tél.">{ticket.client.telephone}</Meta>}
-                                    </>
-                                )}
-                                {ticket.project && (
-                                    <Meta label="Projet">
-                                        <Link href={route('projects.show', ticket.project.id)} className="text-indigo-600 hover:underline">
-                                            {ticket.project.titre}
-                                        </Link>
-                                    </Meta>
-                                )}
+                                <Meta label="Client">
+                                    <Link href={route('prospects.show', ticket.client.id)} className="text-indigo-600 hover:underline">
+                                        {ticket.client.entreprise}
+                                    </Link>
+                                </Meta>
+                                {ticket.client.email && <Meta label="E-mail">{ticket.client.email}</Meta>}
+                                {ticket.client.telephone && <Meta label="Tél.">{ticket.client.telephone}</Meta>}
                             </>
+                        )}
+                        {ticket.project && (
+                            <Meta label="Projet">
+                                <Link href={route('projects.show', ticket.project.id)} className="text-indigo-600 hover:underline">
+                                    {ticket.project.titre}
+                                </Link>
+                            </Meta>
+                        )}
+                        {!ticket.client && !ticket.project && (
+                            <p className="text-sm text-gray-400">Aucun client ni projet rattaché.</p>
                         )}
                     </div>
 

@@ -28,38 +28,35 @@ export default function Create({ clients, types, gravites, recurrences }) {
             <Head title="Nouveau ticket" />
             <div className="mx-auto max-w-2xl p-4 sm:p-6 lg:p-8">
                 <form onSubmit={submit} className="space-y-4 rounded-lg bg-white p-6 shadow">
-                    {/* Ticket interne : sans client, aucune notification envoyée */}
+                    {/* Ticket interne : aucune notification client (le projet reste facultatif) */}
                     <label className="flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
                         <input type="checkbox" checked={form.data.interne}
-                            onChange={(e) => { form.setData('interne', e.target.checked); if (e.target.checked) { form.setData('client_id', ''); form.setData('project_id', ''); } }}
+                            onChange={(e) => form.setData('interne', e.target.checked)}
                             className="rounded border-gray-300" />
-                        🔒 Ticket interne (sans client — aucun e-mail envoyé)
+                        🔒 Ticket interne (aucun e-mail envoyé — client/projet facultatif)
                     </label>
 
-                    {!form.data.interne && (
-                        <div className="grid gap-4 sm:grid-cols-2">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Client *</label>
-                                <select value={form.data.client_id}
-                                    onChange={(e) => { form.setData('client_id', e.target.value); form.setData('project_id', ''); }}
-                                    className="mt-1 w-full rounded-md border-gray-300 text-sm">
-                                    <option value="">Choisir un client…</option>
-                                    {clients.map((c) => <option key={c.id} value={c.id}>{c.entreprise}</option>)}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Projet *</label>
-                                <select value={form.data.project_id} onChange={(e) => form.setData('project_id', e.target.value)}
-                                    disabled={!form.data.client_id}
-                                    className="mt-1 w-full rounded-md border-gray-300 text-sm disabled:bg-gray-50">
-                                    <option value="">{form.data.client_id ? 'Choisir un projet…' : 'Sélectionnez d’abord un client'}</option>
-                                    {projets.map((p) => <option key={p.id} value={p.id}>{p.titre}</option>)}
-                                </select>
-                                {form.errors.project_id && <p className="text-xs text-red-600">{form.errors.project_id}</p>}
-                            </div>
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Client {form.data.interne ? '(optionnel)' : '*'}</label>
+                            <select value={form.data.client_id}
+                                onChange={(e) => { form.setData('client_id', e.target.value); form.setData('project_id', ''); }}
+                                className="mt-1 w-full rounded-md border-gray-300 text-sm">
+                                <option value="">{form.data.interne ? 'Aucun (interne)' : 'Choisir un client…'}</option>
+                                {clients.map((c) => <option key={c.id} value={c.id}>{c.entreprise}</option>)}
+                            </select>
                         </div>
-                    )}
-                    {form.errors.project_id && form.data.interne && <p className="text-xs text-red-600">{form.errors.project_id}</p>}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Projet {form.data.interne ? '(optionnel)' : '*'}</label>
+                            <select value={form.data.project_id} onChange={(e) => form.setData('project_id', e.target.value)}
+                                disabled={!form.data.client_id}
+                                className="mt-1 w-full rounded-md border-gray-300 text-sm disabled:bg-gray-50">
+                                <option value="">{form.data.client_id ? 'Choisir un projet…' : 'Sélectionnez d’abord un client'}</option>
+                                {projets.map((p) => <option key={p.id} value={p.id}>{p.titre}</option>)}
+                            </select>
+                            {form.errors.project_id && <p className="text-xs text-red-600">{form.errors.project_id}</p>}
+                        </div>
+                    </div>
 
                     <div className="grid gap-4 sm:grid-cols-2">
                         <div>

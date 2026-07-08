@@ -37,7 +37,7 @@ class TicketController extends Controller
             ->orderByRaw("CASE WHEN statut IN ('livre', 'ferme') THEN 1 ELSE 0 END")
             ->orderByDesc('created_at')
             ->limit(200)
-            ->get(['id', 'project_id', 'reference', 'titre', 'type', 'statut', 'gravite', 'source', 'created_at'])
+            ->get(['id', 'project_id', 'reference', 'titre', 'type', 'statut', 'gravite', 'source', 'interne', 'created_at'])
             ->map(fn ($b) => [
                 'id'         => $b->id,
                 'reference'  => $b->reference,
@@ -47,7 +47,7 @@ class TicketController extends Controller
                 'gravite'    => $b->gravite,
                 'source'     => $b->source,
                 'client'     => $b->project?->prospect?->entreprise,
-                'interne'    => is_null($b->project_id),
+                'interne'    => (bool) $b->interne,
                 'created_at' => $b->created_at,
                 'url'        => route('tickets.show', $b->id),
             ]);
@@ -97,20 +97,20 @@ class TicketController extends Controller
 
         $interne = (bool) ($data['interne'] ?? false);
 
-        // Ticket client : un projet est obligatoire. Ticket interne : aucun.
+        // Un ticket client (non interne) doit être rattaché à un projet.
+        // Un ticket interne peut en avoir un (optionnel) ou non.
         if (! $interne && empty($data['project_id'])) {
             throw ValidationException::withMessages([
                 'project_id' => 'Choisissez un client/projet, ou cochez « Ticket interne ».',
             ]);
         }
 
-        $projectId = $interne ? null : $data['project_id'];
         $fields = collect($data)->except(['interne', 'project_id'])->all()
-            + ['statut' => 'nouveau', 'source' => 'interne', 'project_id' => $projectId];
+            + ['statut' => 'nouveau', 'source' => 'interne', 'interne' => $interne, 'project_id' => $data['project_id'] ?? null];
 
         $bug = Bug::create($fields);
 
-        // Pas de client sur un ticket interne : aucune notification.
+        // Ticket interne : aucune notification, même s'il est rattaché à un projet/client.
         if ($interne) {
             return redirect()->route('tickets.show', $bug)->with('success', 'Ticket interne créé.');
         }
