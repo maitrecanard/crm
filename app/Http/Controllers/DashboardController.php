@@ -23,10 +23,9 @@ class DashboardController extends Controller
         $aoOuverts = ['a_etudier', 'go', 'dossier', 'depose'];
 
         // --- Tickets en cours : incidents d'assistance non livrés/clôturés ---
-        $ticketsOuverts = ['nouveau', 'en_cours', 'en_test'];
         $graviteRang = ['bloquant' => 0, 'majeur' => 1, 'mineur' => 2];
 
-        $ticketsEnCours = Bug::whereIn('statut', $ticketsOuverts)
+        $ticketsEnCours = Bug::whereIn('statut', Bug::OUVERTS)
             ->with(['project:id,prospect_id,titre', 'project.prospect:id,entreprise'])
             ->get(['id', 'project_id', 'reference', 'titre', 'type', 'statut', 'gravite', 'prochaine_echeance', 'created_at'])
             // Tri par gravité (bloquant d'abord) puis par ancienneté.

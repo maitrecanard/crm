@@ -13,7 +13,11 @@ const RAPPEL_META = {
     prospect: { icon: '📞', tag: 'Relance' },
 };
 
-const TICKET_STATUT = { nouveau: 'Ouvert', en_cours: 'En cours', en_test: 'En vérification' };
+const TICKET_STATUT = {
+    nouveau: 'Ouvert', en_cours: 'En cours',
+    attente_fournisseur: 'Attente fournisseur', attente_client: 'Attente client',
+    en_test: 'En vérification',
+};
 const GRAVITE_STYLE = {
     bloquant: 'bg-red-100 text-red-700', majeur: 'bg-amber-100 text-amber-700', mineur: 'bg-gray-100 text-gray-600',
 };

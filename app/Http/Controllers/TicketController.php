@@ -24,7 +24,10 @@ class TicketController extends Controller
 
         $tickets = Bug::query()
             ->with(['project:id,prospect_id,titre', 'project.prospect:id,entreprise'])
-            ->when($filters['statut'] ?? null, fn ($q, $v) => $q->where('statut', $v))
+            // Par défaut on masque les tickets clôturés ; ils restent accessibles via le filtre « Clôturé ».
+            ->when($filters['statut'] ?? null,
+                fn ($q, $v) => $q->where('statut', $v),
+                fn ($q) => $q->where('statut', '<>', 'ferme'))
             ->when($filters['q'] ?? null, fn ($q, $v) => $q->where(function ($qq) use ($v) {
                 $qq->where('titre', 'like', "%{$v}%")
                     ->orWhere('reference', 'like', "%{$v}%")

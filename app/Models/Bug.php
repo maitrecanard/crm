@@ -76,12 +76,17 @@ class Bug extends Model
 
     /** Étapes (chaque passage notifie le client). Libellés génériques dans l'app. */
     public const STATUTS = [
-        'nouveau'  => 'Ouvert',
-        'en_cours' => 'En cours',
-        'en_test'  => 'En vérification',
-        'livre'    => 'Résolu / livré',
-        'ferme'    => 'Clôturé',
+        'nouveau'             => 'Ouvert',
+        'en_cours'            => 'En cours',
+        'attente_fournisseur' => 'En attente de retour fournisseur',
+        'attente_client'      => 'En attente de retour client',
+        'en_test'             => 'En vérification',
+        'livre'               => 'Résolu / livré',
+        'ferme'               => 'Clôturé',
     ];
+
+    /** Étapes « en cours » : ni livré, ni clôturé (inclut les mises en attente). */
+    public const OUVERTS = ['nouveau', 'en_cours', 'attente_fournisseur', 'attente_client', 'en_test'];
 
     public const GRAVITES = [
         'mineur'   => 'Mineur',
@@ -101,7 +106,10 @@ class Bug extends Model
     public function statutLabel(): string
     {
         $maintenance = [
-            'nouveau' => 'Planifiée', 'en_cours' => 'En cours', 'en_test' => 'En vérification',
+            'nouveau' => 'Planifiée', 'en_cours' => 'En cours',
+            'attente_fournisseur' => 'En attente de retour fournisseur',
+            'attente_client' => 'En attente de retour client',
+            'en_test' => 'En vérification',
             'livre' => 'Terminée', 'ferme' => 'Clôturée',
         ];
 
@@ -123,6 +131,8 @@ class Bug extends Model
             'bug' => [
                 'nouveau'  => 'Nous avons bien reçu votre signalement et l’avons enregistré. Notre équipe va l’examiner.',
                 'en_cours' => 'Votre signalement est désormais pris en charge : la correction est en cours.',
+                'attente_fournisseur' => 'Le traitement se poursuit : nous sommes en attente d’un retour de notre fournisseur/partenaire.',
+                'attente_client'      => 'Nous avons besoin d’un complément d’information de votre part pour avancer. Merci de nous répondre.',
                 'en_test'  => 'Le correctif a été développé et est en cours de test avant mise en ligne.',
                 'livre'    => 'Le correctif a été livré et déployé. N’hésitez pas à vérifier de votre côté.',
                 'ferme'    => 'Votre ticket est clôturé. Merci de votre signalement !',
@@ -130,6 +140,8 @@ class Bug extends Model
             'maintenance' => [
                 'nouveau'  => 'Une opération de maintenance a été planifiée sur votre application.',
                 'en_cours' => 'L’opération de maintenance est en cours.',
+                'attente_fournisseur' => 'L’opération est en attente d’un retour de notre fournisseur/partenaire.',
+                'attente_client'      => 'L’opération est en attente d’une information de votre part.',
                 'en_test'  => 'Vérifications finales en cours suite à la maintenance.',
                 'livre'    => 'L’opération de maintenance est terminée : tout est opérationnel.',
                 'ferme'    => 'Opération de maintenance clôturée. Merci de votre confiance !',
@@ -137,6 +149,8 @@ class Bug extends Model
             'evolution' => [
                 'nouveau'  => 'Votre demande d’évolution a bien été enregistrée.',
                 'en_cours' => 'Votre demande d’évolution est en cours de développement.',
+                'attente_fournisseur' => 'Votre demande d’évolution est en attente d’un retour de notre fournisseur/partenaire.',
+                'attente_client'      => 'Votre demande d’évolution est en attente d’une information de votre part.',
                 'en_test'  => 'L’évolution est en cours de test avant mise en ligne.',
                 'livre'    => 'L’évolution a été livrée et déployée.',
                 'ferme'    => 'Demande d’évolution clôturée. Merci !',
