@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Project;
+use App\Models\Prospect;
 use App\Models\User;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -10,6 +11,26 @@ function adminProjet(): User
 
     return User::create(['name' => 'M', 'email' => 'pj-'.uniqid().'@t.fr', 'password' => bcrypt('x'), 'role' => 'admin']);
 }
+
+it('n’attache jamais de client à un projet interne, même si un client est envoyé', function () {
+    $client = Prospect::create(['cle' => 'c-'.uniqid(), 'entreprise' => 'ACME', 'est_client' => true]);
+
+    $this->actingAs(adminProjet())->post(route('projects.store'), [
+        'interne' => true, 'prospect_id' => $client->id, 'titre' => 'Outil', 'statut' => 'en_cours',
+    ])->assertRedirect();
+
+    $projet = Project::first();
+    expect($projet->interne)->toBeTrue()
+        ->and($projet->prospect_id)->toBeNull();
+});
+
+it('force l’absence de client au niveau du modèle (invariant)', function () {
+    $client = Prospect::create(['cle' => 'c-'.uniqid(), 'entreprise' => 'ACME', 'est_client' => true]);
+
+    $projet = Project::create(['interne' => true, 'prospect_id' => $client->id, 'titre' => 'X', 'statut' => 'en_cours']);
+
+    expect($projet->fresh()->prospect_id)->toBeNull();
+});
 
 it('crée un projet interne sans client', function () {
     $this->actingAs(adminProjet())->post(route('projects.store'), [

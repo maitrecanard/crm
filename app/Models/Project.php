@@ -24,6 +24,16 @@ class Project extends Model
 
     protected $appends = ['avancement'];
 
+    protected static function booted(): void
+    {
+        // Invariant : un projet interne n'a jamais de client rattaché.
+        static::saving(function (Project $project) {
+            if ($project->interne) {
+                $project->prospect_id = null;
+            }
+        });
+    }
+
     /** Cycle de vie d'un projet. */
     public const STATUTS = [
         'cadrage'  => 'Cadrage',
