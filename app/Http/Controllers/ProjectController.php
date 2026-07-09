@@ -91,7 +91,15 @@ class ProjectController extends Controller
         $data['prospect_id'] = $interne ? null : $data['prospect_id'];
         $data['date_debut']  = $data['date_debut'] ?? now()->toDateString();
 
+        // Le partenaire éventuel est géré via le pivot (plusieurs possibles).
+        $partenaireId = $data['partenaire_id'] ?? null;
+        unset($data['partenaire_id']);
+
         $project = Project::create($data);
+
+        if ($partenaireId) {
+            $project->partenaires()->attach($partenaireId);
+        }
 
         foreach (ClientPromotion::standardPhases() as $i => $titre) {
             $project->tasks()->create(['titre' => $titre, 'ordre' => $i]);
@@ -105,6 +113,7 @@ class ProjectController extends Controller
         $project->load([
             'prospect:id,entreprise,localite,telephone,email',
             'tender:id,idweb,objet',
+            'partenaires:id,nom',
             'tasks.partenaire:id,nom',
             'bugs.messages',
             'bugs.images:id,bug_id,nom',
@@ -182,6 +191,26 @@ class ProjectController extends Controller
         $project->update(['interne' => false, 'prospect_id' => $client->id]);
 
         return back()->with('success', 'Client du projet mis à jour.');
+    }
+
+    /** Lie un partenaire au projet. */
+    public function attachPartenaire(Request $request, Project $project)
+    {
+        $data = $request->validate([
+            'partenaire_id' => ['required', 'exists:partenaires,id'],
+        ]);
+
+        $project->partenaires()->syncWithoutDetaching([$data['partenaire_id']]);
+
+        return back()->with('success', 'Partenaire lié au projet.');
+    }
+
+    /** Retire un partenaire du projet. */
+    public function detachPartenaire(Project $project, Partenaire $partenaire)
+    {
+        $project->partenaires()->detach($partenaire->id);
+
+        return back()->with('success', 'Partenaire retiré du projet.');
     }
 
     public function storeTask(Request $request, Project $project)

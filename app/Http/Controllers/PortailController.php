@@ -22,8 +22,7 @@ class PortailController extends Controller
 
         $projects = $partenaire->projects()
             ->with('prospect:id,entreprise')
-            ->orderByDesc('id')
-            ->get(['id', 'partenaire_id', 'prospect_id', 'titre', 'statut']);
+            ->get(['projects.id', 'prospect_id', 'titre', 'statut']);
 
         $taches = ProjectTask::where('partenaire_id', $partenaire->id)
             ->with('project:id,titre')
@@ -50,9 +49,9 @@ class PortailController extends Controller
             'echeance'    => ['nullable', 'date'],
         ]);
 
-        // Le projet doit appartenir au partenaire.
-        $project = Project::where('id', $data['project_id'])
-            ->where('partenaire_id', $partenaire->id)
+        // Le projet doit être lié au partenaire.
+        $project = $partenaire->projects()
+            ->where('projects.id', $data['project_id'])
             ->firstOrFail();
 
         $project->tasks()->create([

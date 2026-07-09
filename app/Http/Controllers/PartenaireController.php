@@ -65,7 +65,7 @@ class PartenaireController extends Controller
     {
         $partenaire->load([
             'user:id,partenaire_id,email,email_verified_at',
-            'projects:id,partenaire_id,prospect_id,titre,statut',
+            'projects:id,prospect_id,titre,statut',
             'projects.prospect:id,entreprise',
         ]);
 
@@ -79,8 +79,8 @@ class PartenaireController extends Controller
             'compteActif'    => $partenaire->compte_actif,
             'taches'         => $taches,
             'statutsTache'   => ProjectTask::STATUTS,
-            // Projets rattachables (sans partenaire pour l'instant).
-            'projetsLibres'  => Project::whereNull('partenaire_id')
+            // Projets rattachables : ceux qui ne sont pas déjà liés à ce partenaire.
+            'projetsLibres'  => Project::whereDoesntHave('partenaires', fn ($q) => $q->whereKey($partenaire->id))
                 ->with('prospect:id,entreprise')
                 ->orderByDesc('id')->get(['id', 'prospect_id', 'titre', 'statut']),
         ]);
@@ -129,7 +129,7 @@ class PartenaireController extends Controller
     public function attachProject(Request $request, Partenaire $partenaire)
     {
         $data = $request->validate(['project_id' => ['required', 'exists:projects,id']]);
-        Project::whereKey($data['project_id'])->update(['partenaire_id' => $partenaire->id]);
+        $partenaire->projects()->syncWithoutDetaching([$data['project_id']]);
 
         return back()->with('success', 'Projet rattaché au partenaire.');
     }
@@ -137,9 +137,7 @@ class PartenaireController extends Controller
     /** Détacher un projet du partenaire. */
     public function detachProject(Partenaire $partenaire, Project $project)
     {
-        if ($project->partenaire_id === $partenaire->id) {
-            $project->update(['partenaire_id' => null]);
-        }
+        $partenaire->projects()->detach($project->id);
 
         return back()->with('success', 'Projet détaché.');
     }

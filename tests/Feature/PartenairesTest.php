@@ -100,9 +100,10 @@ it('le partenaire transmet une tâche sur son projet', function () {
         'role' => 'partenaire', 'partenaire_id' => $partenaire->id, 'email_verified_at' => now(),
     ]);
     $project = Project::create([
-        'prospect_id' => clientProspect()->id, 'partenaire_id' => $partenaire->id,
+        'prospect_id' => clientProspect()->id,
         'titre' => 'Site vitrine', 'statut' => 'en_cours',
     ]);
+    $project->partenaires()->attach($partenaire->id);
 
     $this->actingAs($user)->post('/portail/taches', [
         'project_id' => $project->id, 'titre' => 'Corriger le formulaire',
@@ -123,9 +124,10 @@ it('le partenaire ne peut pas transmettre sur un projet qui n’est pas le sien'
         'role' => 'partenaire', 'partenaire_id' => $a->id, 'email_verified_at' => now(),
     ]);
     $autre = Project::create([
-        'prospect_id' => clientProspect()->id, 'partenaire_id' => $b->id,
+        'prospect_id' => clientProspect()->id,
         'titre' => 'Autre', 'statut' => 'en_cours',
     ]);
+    $autre->partenaires()->attach($b->id);
 
     $this->actingAs($user)->post('/portail/taches', [
         'project_id' => $autre->id, 'titre' => 'Hack',
