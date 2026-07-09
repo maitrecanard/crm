@@ -87,11 +87,11 @@ class ProjectController extends Controller
             }
         }
 
-        $project = Project::create($data + [
-            'interne'     => $interne,
-            'prospect_id' => $interne ? null : $data['prospect_id'],
-            'date_debut'  => $data['date_debut'] ?? now()->toDateString(),
-        ]);
+        $data['interne']     = $interne;
+        $data['prospect_id'] = $interne ? null : $data['prospect_id'];
+        $data['date_debut']  = $data['date_debut'] ?? now()->toDateString();
+
+        $project = Project::create($data);
 
         foreach (ClientPromotion::standardPhases() as $i => $titre) {
             $project->tasks()->create(['titre' => $titre, 'ordre' => $i]);

@@ -24,7 +24,8 @@ export default function Create({ clients, partenaires = [], statuts, preselect }
                     <form onSubmit={submit} className="space-y-4 rounded-lg bg-white p-6 shadow">
                         <label className="flex items-center gap-2 rounded-md bg-gray-50 px-3 py-2 text-sm text-gray-700">
                             <input type="checkbox" checked={form.data.interne}
-                                onChange={(e) => form.setData('interne', e.target.checked)} className="rounded border-gray-300" />
+                                onChange={(e) => { form.setData('interne', e.target.checked); if (e.target.checked) form.setData('prospect_id', ''); }}
+                                className="rounded border-gray-300" />
                             🔒 Projet interne (sans client)
                         </label>
                         {!form.data.interne && (clients.length ? (
