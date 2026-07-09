@@ -100,6 +100,7 @@ Route::middleware(['auth', \App\Http\Middleware\EnsureTwoFactor::class, \App\Htt
     Route::post('/projets', [ProjectController::class, 'store'])->name('projects.store');
     Route::get('/projets/{project}', [ProjectController::class, 'show'])->name('projects.show');
     Route::put('/projets/{project}', [ProjectController::class, 'update'])->name('projects.update');
+    Route::put('/projets/{project}/client', [ProjectController::class, 'updateClient'])->name('projects.client');
     Route::post('/projets/{project}/taches', [ProjectController::class, 'storeTask'])->name('tasks.store');
     Route::post('/projets/{project}/assigner', [ProjectController::class, 'assignTask'])->name('tasks.assign');
     Route::put('/taches/{task}', [ProjectController::class, 'updateTask'])->name('tasks.update');
