@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Project extends Model
@@ -52,6 +53,12 @@ class Project extends Model
     public function partenaire(): BelongsTo
     {
         return $this->belongsTo(Partenaire::class);
+    }
+
+    /** Partenaires liés au projet (plusieurs possibles). */
+    public function partenaires(): BelongsToMany
+    {
+        return $this->belongsToMany(Partenaire::class)->withTimestamps()->orderBy('nom');
     }
 
     public function tender(): BelongsTo

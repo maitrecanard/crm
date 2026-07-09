@@ -77,6 +77,18 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
         clientForm.put(route('projects.client', project.id), { preserveScroll: true, onSuccess: () => setEditClient(false) });
     };
 
+    // Partenaires liés au projet (plusieurs possibles).
+    const partenairesLies = project.partenaires || [];
+    const [newPartenaire, setNewPartenaire] = useState('');
+    const dispoPartenaires = partenaires.filter((p) => !partenairesLies.some((pl) => pl.id === p.id));
+    const attachPartenaire = () => {
+        if (newPartenaire) {
+            router.post(route('projects.partenaires.attach', project.id), { partenaire_id: newPartenaire },
+                { preserveScroll: true, onSuccess: () => setNewPartenaire('') });
+        }
+    };
+    const detachPartenaire = (id) => router.delete(route('projects.partenaires.detach', [project.id, id]), { preserveScroll: true });
+
     const TABS = [
         { id: 'overview', label: "Vue d'ensemble" },
         { id: 'pilotage', label: 'Pilotage' },
@@ -217,6 +229,38 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
                                             </Link>
                                         ) : <p className="text-gray-400">Aucun client rattaché.</p>}
                                     </div>
+
+                                    {/* Partenaires liés (plusieurs possibles) */}
+                                    <div>
+                                        <span className="text-xs uppercase text-gray-400">Partenaires</span>
+                                        {partenairesLies.length > 0 ? (
+                                            <ul className="mt-1 space-y-1">
+                                                {partenairesLies.map((p) => (
+                                                    <li key={p.id} className="flex items-center justify-between">
+                                                        <Link href={route('partenaires.show', p.id)} className="text-indigo-600 hover:underline">
+                                                            {p.nom}
+                                                        </Link>
+                                                        <button onClick={() => detachPartenaire(p.id)}
+                                                            className="text-gray-300 hover:text-red-500" title="Retirer">✕</button>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        ) : <p className="text-gray-400">Aucun partenaire lié.</p>}
+                                        {dispoPartenaires.length > 0 && (
+                                            <div className="mt-2 flex items-center gap-2">
+                                                <select value={newPartenaire} onChange={(e) => setNewPartenaire(e.target.value)}
+                                                    className="flex-1 rounded-md border-gray-300 text-xs">
+                                                    <option value="">Lier un partenaire…</option>
+                                                    {dispoPartenaires.map((p) => <option key={p.id} value={p.id}>{p.nom}</option>)}
+                                                </select>
+                                                <button onClick={attachPartenaire} disabled={!newPartenaire}
+                                                    className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-50">
+                                                    Lier
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
                                     {project.tender && (
                                         <div>
                                             <span className="text-xs uppercase text-gray-400">Issu de l'AO</span><br />
