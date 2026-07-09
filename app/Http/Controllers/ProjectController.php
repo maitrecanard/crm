@@ -120,6 +120,8 @@ class ProjectController extends Controller
             'recurrences'  => \App\Models\Bug::RECURRENCES,
             // Partenaires assignables.
             'partenaires'  => Partenaire::orderBy('nom')->get(['id', 'nom']),
+            // Clients disponibles pour corriger le rattachement du projet.
+            'clients'      => Prospect::where('est_client', true)->orderBy('entreprise')->get(['id', 'entreprise']),
         ]);
     }
 
@@ -144,6 +146,26 @@ class ProjectController extends Controller
         $project->update($data);
 
         return back()->with('success', 'Projet mis à jour.');
+    }
+
+    /** Corrige le client rattaché au projet (erreur de saisie). */
+    public function updateClient(Request $request, Project $project)
+    {
+        $data = $request->validate([
+            'prospect_id' => ['required', 'exists:prospects,id'],
+        ]);
+
+        $client = Prospect::findOrFail($data['prospect_id']);
+        if (! $client->est_client) {
+            $client->forceFill([
+                'est_client'    => true,
+                'client_depuis' => now()->toDateString(),
+            ])->saveQuietly();
+        }
+
+        $project->update(['prospect_id' => $client->id]);
+
+        return back()->with('success', 'Client du projet mis à jour.');
     }
 
     public function storeTask(Request $request, Project $project)

@@ -20,7 +20,7 @@ const PROJET_STATUT_COLORS = {
     suspendu: 'bg-red-100 text-red-700',
 };
 
-export default function Show({ project, statuts, statutsTache, statutsBug, gravites, typesBug, recurrences, partenaires = [] }) {
+export default function Show({ project, statuts, statutsTache, statutsBug, gravites, typesBug, recurrences, partenaires = [], clients = [] }) {
     const [tab, setTab] = useState('overview');
 
     const form = useForm({
@@ -67,6 +67,14 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
     const assign = (e) => {
         e.preventDefault();
         assignForm.post(route('tasks.assign', project.id), { preserveScroll: true, onSuccess: () => assignForm.reset() });
+    };
+
+    // Corriger le client rattaché au projet.
+    const [editClient, setEditClient] = useState(false);
+    const clientForm = useForm({ prospect_id: project.prospect?.id ?? '' });
+    const saveClient = (e) => {
+        e.preventDefault();
+        clientForm.put(route('projects.client', project.id), { preserveScroll: true, onSuccess: () => setEditClient(false) });
     };
 
     const TABS = [
@@ -168,14 +176,35 @@ export default function Show({ project, statuts, statutsTache, statutsBug, gravi
                             <div className="rounded-lg bg-white p-6 shadow">
                                 <h3 className="mb-3 font-semibold text-gray-800">Rattachements</h3>
                                 <div className="space-y-2 text-sm">
-                                    {project.prospect ? (
-                                        <div>
-                                            <span className="text-xs uppercase text-gray-400">Client</span><br />
+                                    <div>
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs uppercase text-gray-400">Client</span>
+                                            {clients.length > 0 && (
+                                                <button onClick={() => setEditClient((v) => !v)}
+                                                    className="text-xs text-indigo-600 hover:underline">
+                                                    {editClient ? 'Annuler' : 'Corriger'}
+                                                </button>
+                                            )}
+                                        </div>
+                                        {editClient ? (
+                                            <form onSubmit={saveClient} className="mt-1 flex items-center gap-2">
+                                                <select value={clientForm.data.prospect_id}
+                                                    onChange={(e) => clientForm.setData('prospect_id', e.target.value)}
+                                                    className="flex-1 rounded-md border-gray-300 text-sm">
+                                                    <option value="">Choisir un client…</option>
+                                                    {clients.map((c) => <option key={c.id} value={c.id}>{c.entreprise}</option>)}
+                                                </select>
+                                                <button type="submit" disabled={clientForm.processing || !clientForm.data.prospect_id}
+                                                    className="rounded-md bg-indigo-600 px-3 py-1 text-xs font-medium text-white disabled:opacity-50">
+                                                    OK
+                                                </button>
+                                            </form>
+                                        ) : project.prospect ? (
                                             <Link href={route('prospects.show', project.prospect.id)} className="text-indigo-600 hover:underline">
                                                 {project.prospect.entreprise} →
                                             </Link>
-                                        </div>
-                                    ) : <p className="text-gray-400">Aucun client rattaché.</p>}
+                                        ) : <p className="text-gray-400">Aucun client rattaché.</p>}
+                                    </div>
                                     {project.tender && (
                                         <div>
                                             <span className="text-xs uppercase text-gray-400">Issu de l'AO</span><br />
