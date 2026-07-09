@@ -4,9 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Concerns\NotifieClientTicket;
 use App\Models\Bug;
-use App\Models\Project;
 use App\Models\Prospect;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
 /**
@@ -37,7 +37,7 @@ class TicketController extends Controller
             ->orderByRaw("CASE WHEN statut IN ('livre', 'ferme') THEN 1 ELSE 0 END")
             ->orderByDesc('created_at')
             ->limit(200)
-            ->get(['id', 'project_id', 'reference', 'titre', 'type', 'statut', 'gravite', 'source', 'created_at'])
+            ->get(['id', 'project_id', 'reference', 'titre', 'type', 'statut', 'gravite', 'source', 'interne', 'created_at'])
             ->map(fn ($b) => [
                 'id'         => $b->id,
                 'reference'  => $b->reference,
@@ -47,6 +47,7 @@ class TicketController extends Controller
                 'gravite'    => $b->gravite,
                 'source'     => $b->source,
                 'client'     => $b->project?->prospect?->entreprise,
+                'interne'    => (bool) $b->interne,
                 'created_at' => $b->created_at,
                 'url'        => route('tickets.show', $b->id),
             ]);
@@ -73,17 +74,20 @@ class TicketController extends Controller
             ]);
 
         return Inertia::render('Tickets/Create', [
-            'clients'     => $clients,
-            'types'       => Bug::TYPES,
-            'gravites'    => Bug::GRAVITES,
-            'recurrences' => Bug::RECURRENCES,
+            'clients'          => $clients,
+            'internalProjects' => \App\Models\Project::where('interne', true)
+                ->orderBy('titre')->get(['id', 'titre']),
+            'types'            => Bug::TYPES,
+            'gravites'         => Bug::GRAVITES,
+            'recurrences'      => Bug::RECURRENCES,
         ]);
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
-            'project_id'         => ['required', 'integer', 'exists:projects,id'],
+            'interne'            => ['boolean'],
+            'project_id'         => ['nullable', 'integer', 'exists:projects,id'],
             'type'               => ['required', 'in:'.implode(',', array_keys(Bug::TYPES))],
             'titre'              => ['required', 'string', 'max:255'],
             'description'        => ['nullable', 'string'],
@@ -93,10 +97,25 @@ class TicketController extends Controller
             'issue_git'          => ['nullable', 'string', 'max:255'],
         ]);
 
-        $project = Project::findOrFail($data['project_id']);
-        unset($data['project_id']);
+        $interne = (bool) ($data['interne'] ?? false);
 
-        $bug = $project->bugs()->create($data + ['statut' => 'nouveau', 'source' => 'interne']);
+        // Un ticket client (non interne) doit être rattaché à un projet.
+        // Un ticket interne peut en avoir un (optionnel) ou non.
+        if (! $interne && empty($data['project_id'])) {
+            throw ValidationException::withMessages([
+                'project_id' => 'Choisissez un client/projet, ou cochez « Ticket interne ».',
+            ]);
+        }
+
+        $fields = collect($data)->except(['interne', 'project_id'])->all()
+            + ['statut' => 'nouveau', 'source' => 'interne', 'interne' => $interne, 'project_id' => $data['project_id'] ?? null];
+
+        $bug = Bug::create($fields);
+
+        // Ticket interne : aucune notification, même s'il est rattaché à un projet/client.
+        if ($interne) {
+            return redirect()->route('tickets.show', $bug)->with('success', 'Ticket interne créé.');
+        }
 
         $res = $this->notifierStatut($bug);
 
@@ -147,6 +166,7 @@ class TicketController extends Controller
                 'type'               => $bug->type,
                 'statut'             => $bug->statut,
                 'statut_label'       => $bug->statutLabel(),
+                'interne'            => $bug->estInterne(),
                 'gravite'            => $bug->gravite,
                 'recurrence'         => $bug->recurrence,
                 'prochaine_echeance' => $bug->prochaine_echeance?->toDateString(),

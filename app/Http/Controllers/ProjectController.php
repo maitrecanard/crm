@@ -52,7 +52,8 @@ class ProjectController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'prospect_id'     => ['required', 'exists:prospects,id'],
+            'interne'         => ['boolean'],
+            'prospect_id'     => ['nullable', 'exists:prospects,id'],
             'partenaire_id'   => ['nullable', 'exists:partenaires,id'],
             'titre'           => ['required', 'string', 'max:255'],
             'description'     => ['nullable', 'string'],
@@ -66,16 +67,31 @@ class ProjectController extends Controller
             'date_fin_prevue' => ['nullable', 'date'],
         ]);
 
-        // Le prospect rattaché devient client s'il ne l'est pas déjà.
-        $client = Prospect::findOrFail($data['prospect_id']);
-        if (! $client->est_client) {
-            $client->forceFill([
-                'est_client'    => true,
-                'client_depuis' => now()->toDateString(),
-            ])->saveQuietly();
+        $interne = (bool) ($data['interne'] ?? false);
+
+        // Un projet client exige un prospect ; un projet interne n'en a pas.
+        if (! $interne && empty($data['prospect_id'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'prospect_id' => 'Choisissez un client, ou cochez « Projet interne ».',
+            ]);
         }
 
-        $project = Project::create($data + ['date_debut' => $data['date_debut'] ?? now()->toDateString()]);
+        // Le prospect rattaché devient client s'il ne l'est pas déjà.
+        if (! $interne) {
+            $client = Prospect::findOrFail($data['prospect_id']);
+            if (! $client->est_client) {
+                $client->forceFill([
+                    'est_client'    => true,
+                    'client_depuis' => now()->toDateString(),
+                ])->saveQuietly();
+            }
+        }
+
+        $project = Project::create($data + [
+            'interne'     => $interne,
+            'prospect_id' => $interne ? null : $data['prospect_id'],
+            'date_debut'  => $data['date_debut'] ?? now()->toDateString(),
+        ]);
 
         foreach (ClientPromotion::standardPhases() as $i => $titre) {
             $project->tasks()->create(['titre' => $titre, 'ordre' => $i]);

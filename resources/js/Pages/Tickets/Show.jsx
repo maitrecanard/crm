@@ -154,22 +154,28 @@ export default function Show({ ticket, historique, destinataires = [], statuts, 
                             className="mt-1 w-full rounded-md border-gray-300 text-sm">
                             {Object.entries(statuts).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
                         </select>
-                        <p className="mt-2 text-xs text-gray-400">Changer le statut notifie automatiquement la liste de diffusion du client.</p>
-                        <div className="mt-3 border-t border-gray-100 pt-2">
-                            <p className="text-xs font-medium text-gray-500">📬 Destinataires ({destinataires.length})</p>
-                            {destinataires.length ? (
-                                <ul className="mt-1 space-y-0.5">
-                                    {destinataires.map((e) => <li key={e} className="truncate text-xs text-gray-600">{e}</li>)}
-                                </ul>
-                            ) : (
-                                <p className="mt-1 text-xs text-rose-500">Aucun destinataire — ajoutez un contact ou l’e-mail du client.</p>
-                            )}
-                            {ticket.client && (
-                                <Link href={route('clients.show', ticket.client.id)} className="mt-1 inline-block text-xs text-indigo-600 hover:underline">
-                                    Gérer les contacts →
-                                </Link>
-                            )}
-                        </div>
+                        <p className="mt-2 text-xs text-gray-400">
+                            {ticket.interne
+                                ? 'Ticket interne : aucune notification n’est envoyée.'
+                                : 'Changer le statut notifie automatiquement la liste de diffusion du client.'}
+                        </p>
+                        {!ticket.interne && (
+                            <div className="mt-3 border-t border-gray-100 pt-2">
+                                <p className="text-xs font-medium text-gray-500">📬 Destinataires ({destinataires.length})</p>
+                                {destinataires.length ? (
+                                    <ul className="mt-1 space-y-0.5">
+                                        {destinataires.map((e) => <li key={e} className="truncate text-xs text-gray-600">{e}</li>)}
+                                    </ul>
+                                ) : (
+                                    <p className="mt-1 text-xs text-rose-500">Aucun destinataire — ajoutez un contact ou l’e-mail du client.</p>
+                                )}
+                                {ticket.client && (
+                                    <Link href={route('clients.show', ticket.client.id)} className="mt-1 inline-block text-xs text-indigo-600 hover:underline">
+                                        Gérer les contacts →
+                                    </Link>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="rounded-lg bg-white p-6 shadow">
@@ -190,6 +196,9 @@ export default function Show({ ticket, historique, destinataires = [], statuts, 
 
                     <div className="rounded-lg bg-white p-6 shadow">
                         <h3 className="mb-2 font-semibold text-gray-800">Client & projet</h3>
+                        {ticket.interne && (
+                            <p className="mb-2 rounded bg-gray-50 px-2 py-1 text-xs text-gray-500">🔒 Ticket interne — aucune notification n’est envoyée.</p>
+                        )}
                         {ticket.client && (
                             <>
                                 <Meta label="Client">
@@ -207,6 +216,9 @@ export default function Show({ ticket, historique, destinataires = [], statuts, 
                                     {ticket.project.titre}
                                 </Link>
                             </Meta>
+                        )}
+                        {!ticket.client && !ticket.project && (
+                            <p className="text-sm text-gray-400">Aucun client ni projet rattaché.</p>
                         )}
                     </div>
 

@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Bug extends Model
 {
     protected $fillable = [
-        'project_id', 'reference', 'type', 'source', 'motif', 'titre', 'description',
+        'project_id', 'reference', 'type', 'source', 'interne', 'motif', 'titre', 'description',
         'statut', 'gravite', 'recurrence', 'prochaine_echeance', 'issue_git',
         'notifie_le', 'resolved_at',
     ];
@@ -46,6 +46,7 @@ class Bug extends Model
         'prochaine_echeance' => 'date',
         'notifie_le'         => 'datetime',
         'resolved_at'        => 'datetime',
+        'interne'            => 'boolean',
     ];
 
     /** Nature de l'intervention. */
@@ -53,6 +54,7 @@ class Bug extends Model
         'bug'         => 'Bug',
         'maintenance' => 'Maintenance périodique',
         'evolution'   => 'Évolution',
+        'tache'       => 'Tâche à réaliser',
     ];
 
     /**
@@ -121,7 +123,7 @@ class Bug extends Model
     /** Préfixe de sujet d'e-mail selon le type. */
     public function subjectPrefix(): string
     {
-        return ['bug' => 'Support', 'maintenance' => 'Maintenance', 'evolution' => 'Évolution'][$this->type] ?? 'Support';
+        return ['bug' => 'Support', 'maintenance' => 'Maintenance', 'evolution' => 'Évolution', 'tache' => 'Tâche'][$this->type] ?? 'Support';
     }
 
     /** Message client associé à l'étape, adapté au type. */
@@ -155,6 +157,13 @@ class Bug extends Model
                 'livre'    => 'L’évolution a été livrée et déployée.',
                 'ferme'    => 'Demande d’évolution clôturée. Merci !',
             ],
+            'tache' => [
+                'nouveau'  => 'Une tâche a été planifiée sur votre dossier.',
+                'en_cours' => 'La tâche est en cours de réalisation.',
+                'en_test'  => 'La tâche est en cours de vérification.',
+                'livre'    => 'La tâche a été réalisée.',
+                'ferme'    => 'La tâche est clôturée. Merci !',
+            ],
         ];
 
         return $messages[$this->type][$this->statut] ?? ($messages['bug'][$this->statut] ?? '');
@@ -163,6 +172,12 @@ class Bug extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    /** Ticket interne : aucune notification client, qu'il soit rattaché à un projet ou non. */
+    public function estInterne(): bool
+    {
+        return (bool) $this->interne;
     }
 
     public function messages(): \Illuminate\Database\Eloquent\Relations\HasMany

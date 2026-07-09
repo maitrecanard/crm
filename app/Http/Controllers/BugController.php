@@ -63,6 +63,11 @@ class BugController extends Controller
 
         $bug->logStatut($ancienStatut, $bug->statut);
 
+        // Ticket interne : aucun client à notifier.
+        if ($bug->estInterne()) {
+            return back()->with('success', 'Statut mis à jour.');
+        }
+
         $res = $this->notifierStatut($bug);
 
         return $res['sent']
@@ -81,8 +86,9 @@ class BugController extends Controller
 
         $message = $bug->messages()->create(['corps' => $data['corps'], 'interne' => $interne]);
 
-        if ($interne) {
-            return back()->with('success', 'Note interne ajoutée (non transmise au client).');
+        // Note interne demandée, ou ticket interne (aucun client) : rien à transmettre.
+        if ($interne || $bug->estInterne()) {
+            return back()->with('success', 'Note ajoutée.');
         }
 
         $res = $this->envoyerAuClient($bug, new BugMessageMail($bug, $message));
