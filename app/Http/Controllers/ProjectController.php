@@ -148,12 +148,28 @@ class ProjectController extends Controller
         return back()->with('success', 'Projet mis à jour.');
     }
 
-    /** Corrige le client rattaché au projet (erreur de saisie). */
+    /** Corrige le rattachement du projet : autre client, ou passage en interne. */
     public function updateClient(Request $request, Project $project)
     {
         $data = $request->validate([
-            'prospect_id' => ['required', 'exists:prospects,id'],
+            'interne'     => ['boolean'],
+            'prospect_id' => ['nullable', 'exists:prospects,id'],
         ]);
+
+        $interne = (bool) ($data['interne'] ?? false);
+
+        // Passage en projet interne : plus aucun client rattaché.
+        if ($interne) {
+            $project->update(['interne' => true, 'prospect_id' => null]);
+
+            return back()->with('success', 'Projet passé en interne.');
+        }
+
+        if (empty($data['prospect_id'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'prospect_id' => 'Choisissez un client, ou cochez « Projet interne ».',
+            ]);
+        }
 
         $client = Prospect::findOrFail($data['prospect_id']);
         if (! $client->est_client) {
@@ -163,7 +179,7 @@ class ProjectController extends Controller
             ])->saveQuietly();
         }
 
-        $project->update(['prospect_id' => $client->id]);
+        $project->update(['interne' => false, 'prospect_id' => $client->id]);
 
         return back()->with('success', 'Client du projet mis à jour.');
     }

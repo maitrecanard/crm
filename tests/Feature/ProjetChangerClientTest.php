@@ -43,3 +43,27 @@ it('exige un client valide', function () {
 
     expect($projet->fresh()->prospect_id)->toBe($c1->id);
 });
+
+it('passe un projet en interne (sans client)', function () {
+    $c1 = Prospect::create(['cle' => 'c1-'.uniqid(), 'entreprise' => 'Client', 'est_client' => true]);
+    $projet = $c1->projects()->create(['titre' => 'Site', 'statut' => 'en_cours']);
+
+    $this->actingAs(adminChgClient())->put(route('projects.client', $projet), ['interne' => true])
+        ->assertRedirect();
+
+    $projet->refresh();
+    expect($projet->interne)->toBeTrue()
+        ->and($projet->prospect_id)->toBeNull();
+});
+
+it('repasse un projet interne à un client', function () {
+    $projet = Project::create(['interne' => true, 'titre' => 'Interne', 'statut' => 'en_cours']);
+    $client = Prospect::create(['cle' => 'c-'.uniqid(), 'entreprise' => 'Client', 'est_client' => true]);
+
+    $this->actingAs(adminChgClient())->put(route('projects.client', $projet), ['prospect_id' => $client->id])
+        ->assertRedirect();
+
+    $projet->refresh();
+    expect($projet->interne)->toBeFalse()
+        ->and($projet->prospect_id)->toBe($client->id);
+});
