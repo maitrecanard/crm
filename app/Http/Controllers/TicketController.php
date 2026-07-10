@@ -112,7 +112,10 @@ class TicketController extends Controller
 
         $bug = Bug::create($fields);
 
-        // Ticket interne : aucune notification, même s'il est rattaché à un projet/client.
+        // Les partenaires liés au projet sont informés dans tous les cas (même interne).
+        $this->notifierPartenaires($bug, 'nouveau');
+
+        // Ticket interne : aucune notification client, même s'il est rattaché à un projet/client.
         if ($interne) {
             return redirect()->route('tickets.show', $bug)->with('success', 'Ticket interne créé.');
         }

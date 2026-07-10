@@ -27,6 +27,8 @@ class BugController extends Controller
 
         $bug = $project->bugs()->create($data + ['statut' => 'nouveau', 'source' => 'interne']);
 
+        $this->notifierPartenaires($bug, 'nouveau');
+
         $res = $this->notifierStatut($bug);
 
         return $res['sent']
@@ -62,6 +64,9 @@ class BugController extends Controller
         }
 
         $bug->logStatut($ancienStatut, $bug->statut);
+
+        // Les partenaires liés au projet sont informés du changement (même ticket interne).
+        $this->notifierPartenaires($bug, 'statut');
 
         // Ticket interne : aucun client à notifier.
         if ($bug->estInterne()) {

@@ -48,4 +48,23 @@ trait NotifieClientTicket
 
         return $res;
     }
+
+    /**
+     * Informe les partenaires liés au projet du ticket (ouverture ou changement
+     * de statut). Indépendant du client : s'applique aussi aux tickets internes.
+     *
+     * @param  'nouveau'|'statut'  $evenement
+     */
+    protected function notifierPartenaires(Bug $bug, string $evenement): void
+    {
+        if (! $bug->project_id) {
+            return;
+        }
+
+        $bug->loadMissing('project.partenaires.user');
+
+        foreach ($bug->project?->partenaires ?? [] as $partenaire) {
+            $partenaire->user?->notify(new \App\Notifications\TicketPartenaire($bug, $evenement));
+        }
+    }
 }
